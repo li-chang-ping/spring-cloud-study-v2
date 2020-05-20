@@ -7,6 +7,9 @@
     <groupId>com.lcp.springcloud</groupId>
     <artifactId>spring-cloud-study-v2</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <modules>
+        <module>cloud-provider-payment-8001</module>
+    </modules>
     <packaging>pom</packaging>
 
     <!--统一管理jar包版本-->
@@ -52,6 +55,7 @@
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
+
             <dependency>
                 <groupId>mysql</groupId>
                 <artifactId>mysql-connector-java</artifactId>
@@ -63,8 +67,16 @@
                 <version>${druid.version}</version>
             </dependency>
             <dependency>
+                <groupId>org.mybatis.spring.boot</groupId>
+                <artifactId>mybatis-spring-boot-starter</artifactId>
+                <version>${mybatis.spring.boot.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+                <optional>true</optional>
             </dependency>
         </dependencies>
     </dependencyManagement>
