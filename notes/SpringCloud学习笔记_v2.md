@@ -113,6 +113,8 @@ JDK：1.8
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <!-- 不要忘记写版本号 -->
+                <version>2.3.0.RELEASE</version>
                 <configuration>
                     <fork>true</fork>
                     <addResources>true</addResources>
@@ -571,6 +573,8 @@ public class OrderController {
 }
 ```
 
+`@RequestBody` 不要忘记，不然
+
 ##### 测试
 
 test-80.http
@@ -595,9 +599,64 @@ Content-Type: application/json
 
 ![image-20200521150330653](SpringCloud学习笔记_v2.assets/image-20200521150330653.png)
 
+#### 4、工程重构
+
+##### 观察问题
+
+上面两个微服务都有一个内容和结构完全一样的包 `entities`，所以系统中有部分重复，进行重构。
+
+##### cloud-api-commons
+
+新建模块 cloud-api-commons 用来存放各种公共类
+
+##### pom.xml
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <optional>true</optional>
+    </dependency>
+    <!-- Java 工具类库 -->
+    <dependency>
+        <groupId>cn.hutool</groupId>
+        <artifactId>hutool-all</artifactId>
+        <version>5.3.5</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-devtools</artifactId>
+        <scope>runtime</scope>
+        <optional>true</optional>
+    </dependency>
+</dependencies>
+```
+
+##### maven clean/install
+
+##### 改造 80，8001 工程
+
+各自删除原先的 `entities` 包，分别在 pom 中加入以下依赖
+
+```xml
+<dependency>
+    <groupId>com.lcp.springcloud</groupId>
+    <artifactId>cloud-api-commons</artifactId>
+    <version>${project.version}</version>
+</dependency>
+```
 
 
-### 总结：
+
+
+
+
+
+
+
+### 3、总结：
 
 1. 建 Module
 2. 改 POM
