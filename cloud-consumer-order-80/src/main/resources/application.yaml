@@ -4,3 +4,11 @@ server:
 spring:
   application:
     name: cloud-consumer-order
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:7001/eureka
+  instance:
+    # 自定义服务名称信息
+    instance-id: consumer-order-80

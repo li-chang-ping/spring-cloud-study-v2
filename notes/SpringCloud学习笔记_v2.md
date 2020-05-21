@@ -750,9 +750,16 @@ Eureka Client 通过注册中心进行访问
 现在，2020
 
 ```xml
+<!-- Eureka Server -->
 <dependency>
     <groupId>org.springframework.cloud</groupId>
     <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+</dependency>
+
+<!-- Eureka Client -->
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
 </dependency>
 ```
 
@@ -777,10 +784,11 @@ eureka:
     # eureka服务端的实例名称
     hostname: eureka7001.com
   client:
+  	#以下两项默认值 true 即可，没必要非得是 false
     # false表示不向注册中心注册自己。
-    register-with-eureka: false
+    #register-with-eureka: false
     # false表示自己端就是注册中心，我的职责就是维护服务实例，并不需要去检索服务。
-    fetch-registry: false
+    #fetch-registry: false
     service-url:
       defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
 
@@ -808,6 +816,38 @@ public class EurekaServerApp7001 {
 ![image-20200521210850191](SpringCloud学习笔记_v2.assets/image-20200521210850191.png)
 
 No instances available：没有可用的实例。因为目前也没有服务注册进来，当然就没有可用的实例。
+
+#### 改造 80，8001 模块为 Eureka Client
+
+##### pom.xml
+
+修改 pom.xml，添加对 Eureka Client 的支持
+
+```xml
+<!-- Eureka Client -->
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+</dependency>
+```
+
+##### application.yaml
+
+```yaml
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka7001.com:7001/eureka
+    #以下默认就是true，不填也行  
+    #fetch-registry: true
+    #register-with-eureka: true
+```
+
+
+
+##### 主启动类
+
+主启动类上添加注解 `@EnableEurekaClient`
 
 
 
