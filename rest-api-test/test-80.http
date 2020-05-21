@@ -1,0 +1,11 @@
+GET http://localhost/consumer/payment/get/2
+Accept: application/json
+
+###
+
+POST http://localhost/consumer/payment/create
+Content-Type: application/json
+
+{
+  "serial": "Test5"
+}

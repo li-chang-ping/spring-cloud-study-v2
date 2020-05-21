@@ -1,0 +1,11 @@
+POST http://localhost:8001/payment/create
+Content-Type: application/json
+
+{
+  "serial": "Test4"
+}
+
+###
+
+GET http://localhost:8001/payment/get/1
+Accept: application/json

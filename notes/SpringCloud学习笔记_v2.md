@@ -398,36 +398,29 @@ public class PaymentController {
 
 ##### 测试
 
-1. Postman POST 方式访问 http://localhost:8001/payment/create
+在 `spring-cloud-study-v2/rest-api-test` 下新建 test-8001.http 进行测试（这种简单的 POST/GET 用不着再切换到 Postman 中进行，IDEA中就可以完成），测试结果会自动保存为 JSON 文件，位于 .idea/httpRequests/ 下
 
-   ```json
-   {
-       "serial": "Test1"
-   }
-   ```
+test-8001.http
 
-   结果如下
+```http
+POST http://localhost:8001/payment/create
+Content-Type: application/json
 
-   ```json
-   {
-       "code": 200,
-       "message": "插入数据库成功",
-       "data": 1
-   }
-   ```
+{
+  "serial": "Test2"
+}
 
-2. GET 方式访问：http://localhost:8001/payment/get/1，结果如下
+###
 
-   ```json
-   {
-       "code": 200,
-       "message": "查询成功",
-       "data": {
-           "id": 1,
-           "serial": "Test1"
-       }
-   }
-   ```
+GET http://localhost:8001/payment/get/1
+Accept: application/json
+```
+
+结果如下
+
+![image-20200521145018180](SpringCloud学习笔记_v2.assets/image-20200521145018180.png)
+
+![image-20200521145120532](SpringCloud学习笔记_v2.assets/image-20200521145120532.png)
 
 
 #### 2、热部署 Devtools
@@ -567,7 +560,7 @@ public class OrderController {
     private RestTemplate restTemplate;
 
     @PostMapping("/create")
-    public CommonResult<Payment> create(Payment payment) {
+    public CommonResult<Payment> create(@RequestBody Payment payment) {
         return restTemplate.postForObject(PAYMENT_URL + "/payment/create", payment, CommonResult.class);
     }
 
@@ -577,6 +570,30 @@ public class OrderController {
     }
 }
 ```
+
+##### 测试
+
+test-80.http
+
+```http
+GET http://localhost/consumer/payment/get/2
+Accept: application/json
+
+###
+
+POST http://localhost/consumer/payment/create
+Content-Type: application/json
+
+{
+  "serial": "Test5"
+}
+```
+
+结果如下
+
+![image-20200521150036733](SpringCloud学习笔记_v2.assets/image-20200521150036733.png)
+
+![image-20200521150330653](SpringCloud学习笔记_v2.assets/image-20200521150330653.png)
 
 
 
