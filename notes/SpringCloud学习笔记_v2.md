@@ -396,7 +396,7 @@ public class PaymentController {
 }
 ```
 
-#### 2、测试
+##### 测试
 
 1. Postman POST 方式访问 http://localhost:8001/payment/create
 
@@ -429,5 +429,162 @@ public class PaymentController {
    }
    ```
 
-   
+
+#### 2、热部署 Devtools
+
+1. Adding devtools to your project
+
+   ```xml
+   <dependency>
+       <groupId>org.springframework.boot</groupId>
+       <artifactId>spring-boot-devtools</artifactId>
+       <scope>runtime</scope>
+       <optional>true</optional>
+   </dependency>
+   ```
+
+2. Adding plugin to your pom.xml
+
+   ```xml
+   下面配置我们粘贴进聚合父类总工程的pom.xml里
+   <build>
+       <!-- fileName 不是必需 -->
+       <fileName>你自己的工程名字</fileName>
+       <plugins>
+           <plugin>
+               <groupId>org.springframework.boot</groupId>
+               <artifactId>spring-boot-maven-plugin</artifactId>
+               <configuration>
+                   <fork>true</fork>
+                   <addResources>true</addResources>
+               </configuration>
+           </plugin>
+       </plugins>
+   </build>
+   ```
+
+3. Enabling automatic build
+
+   File → Settings → Build, Execution, Deployment → Compiler
+
+   ![image-20200521100751218](SpringCloud学习笔记_v2.assets/image-20200521100751218.png)
+
+4. Update the value of
+
+   IDEA 中使用快捷键 <kbd>Ctrl</kbd> + <kbd>Shift</kbd> + <kbd>Alt</kbd> + <kbd>/</kbd> 打开 `Registry`
+
+   ![image-20200521101133528](SpringCloud学习笔记_v2.assets/image-20200521101133528.png)
+
+5. 重启 IDEA
+
+#### 3、cloud-consumer-order-80
+
+微服务消费者订单模块 cloud-consumer-order-80
+
+##### pom.xml
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+
+    <!-- 热部署 -->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-devtools</artifactId>
+        <scope>runtime</scope>
+        <optional>true</optional>
+    </dependency>
+</dependencies>
+```
+
+##### application.yaml
+
+```yaml
+server:
+  port: 80
+
+spring:
+  application:
+    name: cloud-consumer-order
+```
+
+##### ConsumerOrderApp80 主启动类
+
+```java
+@SpringBootApplication
+public class ConsumerOrderApp80 {
+    public static void main(String[] args) {
+        SpringApplication.run(ConsumerOrderApp80.class, args);
+    }
+}
+```
+
+##### entities 包
+
+把上个模块的 entities 复制一份即可
+
+##### ApplicationContextConfig 配置类
+
+```java
+@Configuration
+public class ApplicationContextConfig {
+
+    @Bean
+    public RestTemplate getRestTemplate() {
+        return new RestTemplate();
+    }
+}
+```
+
+##### OrderController
+
+```java
+@RestController
+@Slf4j
+@RequestMapping(value = "/consumer")
+public class OrderController {
+    public static final String PAYMENT_URL = "http://localhost:8001";
+
+    @Resource
+    private RestTemplate restTemplate;
+
+    @PostMapping("/create")
+    public CommonResult<Payment> create(Payment payment) {
+        return restTemplate.postForObject(PAYMENT_URL + "/payment/create", payment, CommonResult.class);
+    }
+
+    @GetMapping(value = "/get/{id}")
+    public CommonResult<Payment> getPayment(@PathVariable Long id) {
+        return restTemplate.getForObject(PAYMENT_URL + "/payment/get/" + id, CommonResult.class);
+    }
+}
+```
+
+
+
+### 总结：
+
+1. 建 Module
+2. 改 POM
+3. 写 YAML
+4. 主启动类
+5. 业务类
 
