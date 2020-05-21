@@ -648,19 +648,172 @@ Content-Type: application/json
 </dependency>
 ```
 
+##### 测试
 
+步骤同上，不再赘述
 
-
-
-
-
-
-
-### 3、总结：
+### 3、模块开发过程总结：
 
 1. 建 Module
 2. 改 POM
 3. 写 YAML
 4. 主启动类
 5. 业务类
+
+## 二、Eureka 服务注册与发现
+
+### 1、Eureka 基础知识
+
+#### 服务治理
+
+在传统的 rpc 远程调用框架中，管理每个服务与服务之间依赖关系比较复杂，所以需要服务治理来管理服务与服务之间的依赖关系，可以实现服务调用、负载均衡、容错、实现服务发现与注册。
+
+参考：https://segmentfault.com/a/1190000010224335
+
+#### 服务注册与发现
+
+在服务注册与发现中，有一个注册中心。当服务器启动的是时候，会把当前自己服务器的信息比如 ip:port 以别名的方式注册到注册中心上，另一方通过别名从注册中心获取到实际的服务器通讯地址。
+
+<img src="SpringCloud学习笔记_v2.assets/image-20200512090836469.png" style="zoom:150%;" />
+
+<img src="SpringCloud学习笔记_v2.assets/image-20200515165137334.png" style="zoom:150%;" />
+
+#### Eureka 两大组件
+
+Eureka 包含两大组件：Eureka Server 和 Eureka Client
+
+Eureka Server 提供服务注册服务
+
+各个微服务节点通过配置启动后，会在 Eureka Server 中进行注册，这样 Eureka Server 中的服务注册表中将会存储所有可用服务节点的信息，服务节点的信息可以在 Eureka Server 的 web 界面中直观的看到。
+
+Eureka Client 通过注册中心进行访问
+
+### 2、单机 Eureka Server 构建
+
+#### cloud-eureka-server-7001
+
+新建 cloud-eureka-server-7001 模块
+
+#### pom.xml
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>com.lcp.springcloud</groupId>
+        <artifactId>cloud-api-commons</artifactId>
+        <version>${project.version}</version>
+    </dependency>
+    <!--eureka-server-->
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <!--一般为通用配置-->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-devtools</artifactId>
+        <scope>runtime</scope>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+##### Eureka 1.x 与 2.x 对比
+
+以前，2018
+
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-eureka</artifactId>
+</dependency>
+```
+
+现在，2020
+
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+</dependency>
+```
+
+#### 修改映射配置
+
+编辑 hosts 文件
+
+```
+127.0.0.1 eureka7001.com
+127.0.0.1 eureka7002.com
+127.0.0.1 eureka7003.com
+```
+
+#### application.yaml
+
+```yaml
+server:
+  port: 7001
+
+eureka:
+  instance:
+    # eureka服务端的实例名称
+    hostname: eureka7001.com
+  client:
+    # false表示不向注册中心注册自己。
+    register-with-eureka: false
+    # false表示自己端就是注册中心，我的职责就是维护服务实例，并不需要去检索服务。
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+
+spring:
+  application:
+    name: eureka-server
+```
+
+#### EurekaServerApp7001 主启动类
+
+```java
+@SpringBootApplication
+@EnableEurekaServer
+public class EurekaServerApp7001 {
+    public static void main(String[] args) {
+        SpringApplication.run(EurekaServerApp7001.class, args);
+    }
+}
+```
+
+#### 测试
+
+访问：http://localhost:7001/
+
+![image-20200521210850191](SpringCloud学习笔记_v2.assets/image-20200521210850191.png)
+
+No instances available：没有可用的实例。因为目前也没有服务注册进来，当然就没有可用的实例。
+
+
+
+### 3、集群 Eureka Server 构建
+
+
+
+
 

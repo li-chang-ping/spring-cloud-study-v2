@@ -23,6 +23,10 @@
 ## 项目模块说明
 
 ```
+spring-cloud-study-v2
+├───cloud-api-commons               公共API
+├───cloud-consumer-order-80         微服务消费者订单模块
+├───cloud-provider-payment-8001     payment 微服务提供者模块
 
 ```
 

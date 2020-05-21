@@ -7,5 +7,5 @@ POST http://localhost/consumer/payment/create
 Content-Type: application/json
 
 {
-  "serial": "Test5"
+  "serial": "Test7"
 }
