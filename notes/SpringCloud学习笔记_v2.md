@@ -936,6 +936,18 @@ spring:
     name: eureka-server
 ```
 
+##### 测试
+
+访问：http://localhost:7001/
+
+![image-20200522101330062](SpringCloud学习笔记_v2.assets/image-20200522101330062.png)
+
+注意下图
+
+![image-20200522101429076](SpringCloud学习笔记_v2.assets/image-20200522101429076.png)
+
+当 7001，7002 都正常运行时，7001，7002 应出现在对方的 available-replicas 中
+
 #### 80、8001 注册进集群
 
 ##### 修改 YAML
@@ -953,5 +965,57 @@ eureka:
     lease-renewal-interval-in-seconds: 1
     # 发呆时间，即服务续约到期时间（缺省为90s）
     lease-expiration-duration-in-seconds: 2
+```
+
+##### 测试
+
+```http
+GET http://localhost:8001/payment/get/1
+Accept: application/json
+
+###
+
+GET http://localhost/consumer/payment/get/2
+Accept: application/json
+```
+
+### 4、cloud-provider-payment 集群
+
+#### cloud-provider-payment-8002
+
+参考 cloud-provider-payment-8001 搭建 cloud-provider-payment-8002
+
+##### pom.xml
+
+直接复制 8001 的 dependencies
+
+##### application.yaml
+
+直接复制 8001 的 yaml，修改以下两项即可
+
+```yaml
+server:
+  port: 8002
+
+eureka:
+  instance:
+    instance-id: provider-payment-8002
+```
+
+##### 主启动类和业务类
+
+直接复制 8001 的， 主启动类改名为 `PaymentProviderApp8002`
+
+##### 修改 8001/8002 的 Controller
+
+在返回的信息中加入端口信息
+
+```java
+// 新增，读取配置文件的中的端口信息
+@Value("${server.port}")
+private String serverPort;
+
+// return new CommonResult<>(200, "插入数据库成功", result);
+return new CommonResult<>(200, "插入数据库成功。serverPort：" + serverPort, result);
 ```
 
