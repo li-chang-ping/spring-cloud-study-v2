@@ -1019,3 +1019,38 @@ private String serverPort;
 return new CommonResult<>(200, "插入数据库成功。serverPort：" + serverPort, result);
 ```
 
+##### 测试
+
+同上
+
+### 5、负载均衡 @LoadBalanced
+
+使用 @LoadBalanced 可以赋予 RestTemplate 负载均衡的能力
+
+修改 cloud-consumer-order-80 
+
+#### ApplicationContextConfig
+
+```java
+@Bean
+@LoadBalanced
+public RestTemplate getRestTemplate() {
+    return new RestTemplate();
+}
+```
+
+#### OrderController
+
+```java
+// public static final String PAYMENT_URL = "http://localhost:8001";
+public static final String PAYMENT_URL = "http://CLOUD-PROVIDER-PAYMENT";
+```
+
+`CLOUD-PROVIDER-PAYMENT` 的来源
+
+![image-20200522113055398](SpringCloud学习笔记_v2.assets/image-20200522113055398.png)
+
+#### 测试
+
+反复访问：GET http://localhost/consumer/payment/get/2，观察返回信息中的端口号
+
