@@ -682,11 +682,31 @@ Content-Type: application/json
 
 Eureka 包含两大组件：Eureka Server 和 Eureka Client
 
-Eureka Server 提供服务注册服务
+- Eureka Server 提供服务注册服务
 
-各个微服务节点通过配置启动后，会在 Eureka Server 中进行注册，这样 Eureka Server 中的服务注册表中将会存储所有可用服务节点的信息，服务节点的信息可以在 Eureka Server 的 web 界面中直观的看到。
+  各个微服务节点通过配置启动后，会在 Eureka Server 中进行注册，这样 Eureka Server 中的服务注册表中将会存储所有可用服务节点的信息，服务节点的信息可以在 Eureka Server 的 web 界面中直观的看到。
 
-Eureka Client 通过注册中心进行访问
+- Eureka Client 通过注册中心进行访问
+
+  EurekaClient 是一个 Java 客户端，用于简化 Eureka Server 的交互，客户端同时也具备一个内置的、使用轮询(round-robin) 负载算法的负载均衡器。在应用启动后，将会向 Eureka Server 发送心跳（默认周期为30秒）。如果Eureka Server 在多个心跳周期内没有接收到某个节点的心跳，Eureka Server 将会从服务注册表中把这个服务节点移除（默认90秒）。
+
+#### Eureka 自我保护机制
+
+现象
+
+![](SpringCloud学习笔记_v2.assets/image-20200512151417688.png)
+
+什么是自我保护机制
+
+默认情况下，如果 Eureka Server 在一定时间内没有接收到某个微服务实例的心跳，Eureka Server 将会注销该实例（默认90秒）。但是当网络分区故障发生时，微服务与 Eureka Server 之间无法正常通信，以上行为可能变得非常危险了——因为微服务本身其实是健康的，此时本不应该注销这个微服务。Eureka 通过“自我保护模式”来解决这个问题——当 Eureka Server 节点在短时间内丢失过多客户端时（可能发生了网络分区故障），那么这个节点就会进入自我保护模式。一旦进入该模式，Eureka Server 就会保护服务注册表中的信息，不再删除服务注册表中的数据（也就是不会注销任何微服务）。当网络故障恢复后，该 Eureka Server节点会自动退出自我保护模式。
+
+在自我保护模式中，Eureka Server 会保护服务注册表中的信息，不再注销任何服务实例。当它收到的心跳数重新恢复到阈值以上时，该 Eureka Server 节点就会自动退出自我保护模式。它的设计哲学就是宁可保留错误的服务注册信息，也不盲目注销任何可能健康的服务实例。一句话讲解：好死不如赖活着
+
+综上，自我保护模式是一种应对网络异常的安全保护措施。它的架构哲学是宁可同时保留所有微服务（健康的微服务和不健康的微服务都会保留），也不盲目注销任何健康的微服务。使用自我保护模式，可以让 Eureka 集群更加的健壮、稳定。
+
+在Spring Cloud中，可以使用 `eureka.server.enable-self-preservation = false` 禁用自我保护模式。
+
+总结：某时刻一个微服务不可用了 eureka 不会立即清理，依旧会对该微服务的信息进行保存。
 
 ### 2、单机 Eureka Server 构建
 
@@ -770,7 +790,6 @@ Eureka Client 通过注册中心进行访问
 ```
 127.0.0.1 eureka7001.com
 127.0.0.1 eureka7002.com
-127.0.0.1 eureka7003.com
 ```
 
 #### application.yaml
@@ -843,17 +862,96 @@ eureka:
     #register-with-eureka: true
 ```
 
-
-
 ##### 主启动类
 
 主启动类上添加注解 `@EnableEurekaClient`
 
+##### 测试
 
+访问：http://localhost:7001/
+
+![image-20200521220030671](SpringCloud学习笔记_v2.assets/image-20200521220030671.png)
 
 ### 3、集群 Eureka Server 构建
 
+#### cloud-eureka-server-7002
 
+参考 cloud-eureka-server-7001 新建 cloud-eureka-server-7002
 
+##### pom.xml
 
+修改 7001，7002 的 yaml
+
+7001
+
+```yaml
+server:
+  port: 7001
+
+eureka:
+  instance:
+    # eureka服务端的实例名称
+    hostname: eureka7001.com
+    instance-id: eureka-server-7001
+  client:
+    #以下两项默认值 true 即可，没必要非得是 false
+    # false表示不向注册中心注册自己。
+    #    register-with-eureka: false
+    # false表示自己端就是注册中心，我的职责就是维护服务实例，并不需要去检索服务。
+    #    fetch-registry: false
+    service-url:
+      #defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+      defaultZone: http://eureka7002.com:7002/eureka/
+      
+  server:
+    # 测试时关闭自我保护机制，保证不可用服务及时剔除
+    enable-self-preservation: false
+    # 缩短 eureka server 清理无效节点的时间间隔，默认60000毫秒，即60秒，现在调整为间隔2秒
+    eviction-interval-timer-in-ms: 2000
+    
+spring:
+  application:
+    name: eureka-server
+```
+
+7002
+
+```yaml
+server:
+  port: 7002
+
+eureka:
+  instance:
+    hostname: eureka7002.com
+    instance-id: eureka-server-7002
+  client:
+    service-url:
+      defaultZone: http://eureka7001.com:7001/eureka/
+  server:
+    enable-self-preservation: false
+    eviction-interval-timer-in-ms: 2000
+
+spring:
+  application:
+    name: eureka-server
+```
+
+#### 80、8001 注册进集群
+
+##### 修改 YAML
+
+修改 defaultZone，添加 instance 下的两项
+
+```yaml
+eureka:
+  client:
+    service-url:
+      #defaultZone: http://eureka7001.com:7001/eureka
+      defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka
+  instance:
+    # 心跳时间，即服务续约间隔时间（缺省为30s）
+    lease-renewal-interval-in-seconds: 1
+    # 发呆时间，即服务续约到期时间（缺省为90s）
+    lease-expiration-duration-in-seconds: 2
+```
 
