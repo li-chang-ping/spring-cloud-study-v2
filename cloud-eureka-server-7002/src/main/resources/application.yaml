@@ -6,6 +6,7 @@ eureka:
     # eureka服务端的实例名称
     hostname: eureka7002.com
     instance-id: eureka-server-7002
+#    prefer-ip-address: true
   client:
     #以下两项默认值 true 即可，没必要非得是 false
     # false表示不向注册中心注册自己。
