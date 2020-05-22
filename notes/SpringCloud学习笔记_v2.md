@@ -708,7 +708,9 @@ Eureka 包含两大组件：Eureka Server 和 Eureka Client
 
 在Spring Cloud中，可以使用 `eureka.server.enable-self-preservation = false` 禁用自我保护模式。
 
-总结：某时刻一个微服务不可用了 eureka 不会立即清理，依旧会对该微服务的信息进行保存。
+> 总结：某时刻一个微服务不可用了 eureka 不会立即清理，依旧会对该微服务的信息进行保存。
+>
+> 属于 CAP 里的 AP
 
 ### 2、单机 Eureka Server 构建
 
@@ -1165,3 +1167,163 @@ public Object discovery() {
 > https://blog.csdn.net/zheng199172/article/details/82466139
 >
 > https://blog.csdn.net/Ezreal_King/article/details/72594535
+
+### 6、Eureka 停更相关
+
+https://github.com/Netflix/eureka/wiki
+
+Eureka 结束开源，转为闭源
+
+## 三、Zookeeper 服务注册与发现
+
+### 1、Zookeeper 基础知识
+
+官方文档上这么解释zookeeper，它是一个分布式服务框架，是Apache Hadoop 的一个子项目，它主要是用来解决分布式应用中经常遇到的一些数据管理问题，如：统一命名服务、状态同步服务、集群管理、分布式应用配置项的管理等。
+
+参考：https://blog.csdn.net/java_66666/article/details/81015302
+
+使用 Zookeeper 服务器取代 Eureka 服务器作为服务注册中心。
+
+### 2、启动 Zookeeper
+
+#### Docker
+
+```shell
+docker run --name cloud_zk_1 -p 2181:2181 --restart=always -d zookeeper:3.6.1
+```
+
+Linux
+
+```shell
+./zkServer.sh
+```
+
+Windows
+
+双击 `zkServer.cmd`
+
+### 3、cloud-provider-payment-8004
+
+新建服务提供者模块 cloud-provider-payment-8004
+
+#### pom.xml
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>com.lcp.springcloud</groupId>
+        <artifactId>cloud-api-commons</artifactId>
+        <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <!--SpringBoot整合Zookeeper客户端-->
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-zookeeper-discovery</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-devtools</artifactId>
+        <scope>runtime</scope>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+#### application.yaml
+
+```yaml
+server:
+  # 8004表示注册到zookeeper服务器的支付服务提供者端口号
+  port: 8004
+  
+spring:
+  application:
+    # 服务别名---注册zookeeper到注册中心的名称
+    name: cloud-provider-payment
+  cloud:
+    zookeeper:
+      # 默认localhost:2181
+      connect-string: localhost:2181
+```
+
+#### PaymentProviderZkApp8004 主启动类
+
+注意注解 `@EnableDiscoveryClient` ，该注解用于向 consul 或者 zookeeper 注册服务
+
+```java
+@SpringBootApplication
+@EnableDiscoveryClient
+public class PaymentProviderZkApp8004 {
+    public static void main(String[] args) {
+        SpringApplication.run(PaymentProviderZkApp8004.class, args);
+    }
+}
+```
+
+#### PaymentController
+
+```java
+@RestController
+@Slf4j
+public class PaymentController {
+    @Value("${server.port}")
+    private String serverPort;
+
+    @RequestMapping(value = "payment/zk")
+    public String paymentZk() {
+        return "SpringCloud with zookeeper:" + serverPort + "\t" + UUID.randomUUID().toString();
+    }
+}
+```
+
+#### 测试
+
+启动 8004
+
+##### 验证测试一
+
+test-8004.http
+
+```http
+GET http://localhost:8004/payment/zk
+```
+
+![image-20200522214310337](SpringCloud学习笔记_v2.assets/image-20200522214310337.png)
+
+注册成功
+
+##### 验证测试二
+
+
+
+
+
+
+
+##### 可能遇到的问题
+
+如果 maven 自动导入的 zookeeper jar 包版本高于启动的 zookeeper 版本，会导致 8004启动报错，自动导入的 jar 包版本如下
+
+![image-20200522215240779](SpringCloud学习笔记_v2.assets/image-20200522215240779.png)
+
