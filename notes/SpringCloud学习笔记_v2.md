@@ -176,6 +176,7 @@ dependencyManagement 中定义的只是依赖的声明，并不实现引入，�
 ```xml
 <dependencies>
 
+    <!-- 以下两项应该是标配 -->
     <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-web</artifactId>
@@ -184,6 +185,7 @@ dependencyManagement 中定义的只是依赖的声明，并不实现引入，�
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
+    
     <dependency>
         <groupId>org.mybatis.spring.boot</groupId>
         <artifactId>mybatis-spring-boot-starter</artifactId>
@@ -979,11 +981,9 @@ GET http://localhost/consumer/payment/get/2
 Accept: application/json
 ```
 
-### 4、cloud-provider-payment 集群
+#### cloud-provider-payment 集群
 
-#### cloud-provider-payment-8002
-
-参考 cloud-provider-payment-8001 搭建 cloud-provider-payment-8002
+参考 cloud-provider-payment-8001 搭建 `cloud-provider-payment-8002`
 
 ##### pom.xml
 
@@ -1023,13 +1023,13 @@ return new CommonResult<>(200, "插入数据库成功。serverPort：" + serverP
 
 同上
 
-### 5、负载均衡 @LoadBalanced
+#### 负载均衡 @LoadBalanced
 
 使用 @LoadBalanced 可以赋予 RestTemplate 负载均衡的能力
 
 修改 cloud-consumer-order-80 
 
-#### ApplicationContextConfig
+##### ApplicationContextConfig
 
 ```java
 @Bean
@@ -1039,7 +1039,7 @@ public RestTemplate getRestTemplate() {
 }
 ```
 
-#### OrderController
+##### OrderController
 
 ```java
 // public static final String PAYMENT_URL = "http://localhost:8001";
@@ -1050,7 +1050,118 @@ public static final String PAYMENT_URL = "http://CLOUD-PROVIDER-PAYMENT";
 
 ![image-20200522113055398](SpringCloud学习笔记_v2.assets/image-20200522113055398.png)
 
-#### 测试
+##### 测试
 
-反复访问：GET http://localhost/consumer/payment/get/2，观察返回信息中的端口号
+反复访问：GET http://localhost/consumer/payment/get/2，观察返回数据中的端口号，会发现 8001、8002 端口交替出现。
 
+### 4、微服务信息完善
+
+以下均以 cloud-consumer-order-80 的为例
+
+#### 访问信息显示IP
+
+目前 Eureka Server 的 Web 页面 Status 下的链接鼠标放上去的提示路径只有主机名，没有 IP地址
+
+![image-20200522154910753](SpringCloud学习笔记_v2.assets/image-20200522154910753.png)
+
+修改 YAML，将 `prefer-ip-address` 设为 true
+
+```yaml
+eureka:
+  instance:
+    prefer-ip-address: true
+```
+
+> 如果 Eureka Server 集群是同一 IP，不要将这项设为 true，会导致 Eureka Server 永远处于 unavailable-replicas，而且默认配置就是 false
+
+#### Status 中链接名称修改
+
+默认情况下如果不配置 `instance-id（唯一id）` Status 中的链接名称含有主机名（默认由 主机名 + spring.application.name + 端口 组成），如下图所示
+
+![image-20200522160240949](SpringCloud学习笔记_v2.assets/image-20200522160240949.png)
+
+修改 YAML，设置 `instance-id`
+
+```yaml
+eureka:
+  instance:
+    instance-id: consumer-order-80
+```
+
+#### 微服务的 info 页面为 404 ErrorPage
+
+修改 pom.xml 添加以下依赖
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+```
+
+修改 YAML
+
+```yaml
+info:
+  app.name: spring-cloud-study-v2
+  company.name: www.lichangping.top
+  build.artifactId: $project.artifactId$
+  build.version: $project.version$
+```
+
+访问：http://192.168.1.10/actuator/info
+
+#### 补充：查看微服务状态
+
+访问：http://192.168.1.10/actuator/health
+
+### 5、服务发现 Discovery
+
+对于注册进 Eureka Server 里的微服务，可以通过服务发现来获得该服务的信息。
+
+下面修改 cloud-provider-payment-8001
+
+##### PaymentController
+
+添加以下内容
+
+```java
+/**
+ * 服务发现 获取服务信息
+ */
+@Resource
+private DiscoveryClient discoveryClient;
+
+@GetMapping(value = "/discovery")
+public Object discovery() {
+    List<String> services = discoveryClient.getServices();
+    for (String service : services) {
+        log.info("---- service:" + service);
+    }
+
+    // 一个微服务下的全部实例（集群状态多个微服务名称相同，算一个微服务，一个节点算一个实例）
+    List<ServiceInstance> instances = discoveryClient.getInstances("CLOUD-PROVIDER-PAYMENT");
+    for (ServiceInstance instance : instances) {
+        log.info(instance.getServiceId() + "\t" + instance.getHost() + "\t" + instance.getPort() + "\t" + instance.getUri());
+    }
+    return discoveryClient;
+}
+```
+
+##### 测试
+
+访问：http://localhost:8001/payment/discovery
+
+![image-20200522173812787](SpringCloud学习笔记_v2.assets/image-20200522173812787.png)
+
+![image-20200522173833976](SpringCloud学习笔记_v2.assets/image-20200522173833976.png)
+
+> 补充
+>
+> 主启动类不需要加 `@EnableDiscoveryClient` ，因为这里已经有 `@EnableEurekaClient` 了
+>
+> 参考：
+>
+> https://blog.csdn.net/zheng199172/article/details/82466139
+>
+> https://blog.csdn.net/Ezreal_King/article/details/72594535

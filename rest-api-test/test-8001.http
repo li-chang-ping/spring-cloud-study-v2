@@ -9,3 +9,8 @@ Content-Type: application/json
 {
   "serial": "Test6"
 }
+
+###
+
+GET http://localhost:8001/payment/discovery
+Accept: application/json
