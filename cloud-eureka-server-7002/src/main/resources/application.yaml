@@ -1,11 +1,11 @@
 server:
-  port: 7001
+  port: 7002
 
 eureka:
   instance:
     # eureka服务端的实例名称
-    hostname: eureka7001.com
-    instance-id: eureka-server-7001
+    hostname: eureka7002.com
+    instance-id: eureka-server-7002
   client:
     #以下两项默认值 true 即可，没必要非得是 false
     # false表示不向注册中心注册自己。
@@ -14,8 +14,7 @@ eureka:
     #    fetch-registry: false
     service-url:
       #defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
-      defaultZone: http://eureka7002.com:7002/eureka/
-
+      defaultZone: http://eureka7001.com:7001/eureka/
   server:
     # 测试时关闭自我保护机制，保证不可用服务及时剔除
     enable-self-preservation: false
