@@ -1781,5 +1781,68 @@ CAP
 
 ![cp](SpringCloud学习笔记_v2.assets/cp.jpg)
 
+## 六、Ribbon 负载均衡调用
+
+两年了没多大变化，使用见 `SpringCloud学习笔记_V1`
+
+## 七、OpenFeign 服务接口调用
 
 
+
+
+
+## 八、Hystrix 熔断器
+
+
+
+
+
+## 九、Zuul 路由网关
+
+
+
+
+
+## 十、Gateway 新一代路由网关
+
+
+
+## 十一、Spring Cloud Config 分布式配置中心
+
+
+
+## 十二、Spring Cloud Bus 消息总线
+
+
+
+
+
+## 十三、Spring Cloud Stream 消息驱动
+
+
+
+
+
+## 十四、Spring Cloud Sleuth 分布式链路跟踪
+
+
+
+
+
+## 十五、Spring Cloud Alibaba 入门简介
+
+
+
+
+
+## 十六、Spring Cloud Alibaba Nacos 服务注册和配置中心
+
+
+
+
+
+## 十七、Spring Cloud Alibaba Sentinel 实现熔断与限流
+
+
+
+## 十八、Spring Cloud Alibaba Seata 处理分布式事务
