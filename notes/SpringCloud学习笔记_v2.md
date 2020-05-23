@@ -1752,3 +1752,34 @@ GET http://localhost:86/consumer/payment/consul
 ```
 
 ![image-20200523144009081](SpringCloud学习笔记_v2.assets/image-20200523144009081.png)
+
+## 五、三个注册中心的异同点
+
+| 组件名    | 语言 | CAP  | 服务健康检查 | 对外暴露接口 | Spring Cloud 集成 |
+| --------- | ---- | ---- | ------------ | ------------ | ----------------- |
+| Eureka    | Java | AP   | 可配支持     | HTTP         | 已集成            |
+| Consul    | Go   | CP   | 支持         | HTTP/DNS     | 已集成            |
+| Zookeeper | Java | CP   | 支持         | 客户端       | 已集成            |
+
+CAP
+
+- C：Consistency（强一致性）
+- A：Availability（可用性）
+- P：Partition Tolerance（分区容错性）
+
+最多只能同时满足两个
+
+在分布式系统中，P 必须要保证，所以只有 CP，AP。
+
+![image-20200523150253872](SpringCloud学习笔记_v2.assets/image-20200523150253872.png)
+
+### Eureka（AP）
+
+![AP](SpringCloud学习笔记_v2.assets/AP.jpg)
+
+### Zookeeper/Consul（CP）
+
+![cp](SpringCloud学习笔记_v2.assets/cp.jpg)
+
+
+
