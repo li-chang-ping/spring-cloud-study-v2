@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>cloud-provider-payment-8004</artifactId>
+    <artifactId>cloud-consumer-order-zk-84</artifactId>
 
     <dependencies>
         <dependency>

@@ -1202,9 +1202,9 @@ Windows
 
 双击 `zkServer.cmd`
 
-### 3、cloud-provider-payment-8004
+### 3、cloud-provider-payment-zk-8004
 
-新建服务提供者模块 cloud-provider-payment-8004
+新建服务提供者模块 cloud-provider-payment-zk-8004
 
 #### pom.xml
 
@@ -1315,15 +1315,168 @@ GET http://localhost:8004/payment/zk
 
 ##### 验证测试二
 
+使用命令 `./zkCli.sh`，连接 Zookeeper
 
-
-
-
-
+![image-20200523094022303](SpringCloud学习笔记_v2.assets/image-20200523094022303.png)
 
 ##### 可能遇到的问题
 
 如果 maven 自动导入的 zookeeper jar 包版本高于启动的 zookeeper 版本，会导致 8004启动报错，自动导入的 jar 包版本如下
 
 ![image-20200522215240779](SpringCloud学习笔记_v2.assets/image-20200522215240779.png)
+
+jar 包冲突排除 
+
+```xml
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-zookeeper-discovery</artifactId>
+    <exclusions>
+        <!--先排除自带的zookeeper3.5.3-->
+        <exclusion>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
+        </exclusion>
+    </exclusions>
+</dependency>
+<!--添加zookeeper3.4.9版本-->
+<dependency>
+    <groupId>org.apache.zookeeper</groupId>
+    <artifactId>zookeeper</artifactId>
+    <version>3.4.9</version>
+</dependency>
+
+```
+
+### 4、cloud-consumer-order-zk-84
+
+将服务消费者注册进 Zookeeper
+
+#### pom.xml
+
+```xml
+<dependencies>
+    <dependency>
+        <groupId>com.lcp.springcloud</groupId>
+        <artifactId>cloud-api-commons</artifactId>
+        <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+
+    <!--SpringBoot整合Zookeeper客户端-->
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-zookeeper-discovery</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-devtools</artifactId>
+        <scope>runtime</scope>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+#### application.yaml
+
+```yaml
+server:
+  port: 84
+spring:
+  application:
+    # 服务别名
+    name: cloud-consumer-order
+  cloud:
+    zookeeper:
+      # 注册到zookeeper地址
+      connect-string: localhost:2181
+```
+
+#### ApplicationContextConfig
+
+```java
+@Configuration
+public class ApplicationContextConfig {
+
+    @Bean
+    @LoadBalanced
+    public RestTemplate getRestTemplate() {
+        return new RestTemplate();
+    }
+}
+```
+
+#### OrderController
+
+```java
+@RestController
+@Slf4j
+@RequestMapping(value = "/consumer/payment")
+public class OrderController {
+    public static final String PAYMENT_URL = "http://cloud-provider-payment";
+
+    @Resource
+    private RestTemplate restTemplate;
+
+    @GetMapping(value = "/zk")
+    public String paymentInfo() {
+        return restTemplate.getForObject(PAYMENT_URL + "/payment/zk", String.class);
+    }
+}
+```
+
+注意 PAYMENT_URL，此处为小写，因为 zookeeper 中是小写，这和 Eureka 不同
+
+#### ConsumerOrderZkApp84
+
+```java
+@SpringBootApplication
+@EnableDiscoveryClient
+public class ConsumerOrderZkApp84 {
+    public static void main(String[] args) {
+        SpringApplication.run(ConsumerOrderZkApp84.class, args);
+    }
+}
+```
+
+#### 测试
+
+启动 cloud-consumer-order-zk-84
+
+Zookeeper 中查看
+
+![image-20200523102659942](SpringCloud学习笔记_v2.assets/image-20200523102659942.png)
+
+服务已注册
+
+访问测试，test-84.http
+
+```http
+GET http://localhost:84/consumer/payment/zk
+```
+
+![image-20200523102757428](SpringCloud学习笔记_v2.assets/image-20200523102757428.png)
+
+## 四、Consul 服务注册与发现
+
+
 
