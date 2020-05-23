@@ -1643,7 +1643,112 @@ GET http://localhost:8006/payment/consul
 
 ### 4、cloud-consumer-order-consul-86
 
+#### pom.xml
 
+```xml
+<dependencies>
+    <!--SpringCloud consul-server-->
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-consul-discovery</artifactId>
+    </dependency>
 
+    <dependency>
+        <groupId>com.lcp.springcloud</groupId>
+        <artifactId>cloud-api-commons</artifactId>
+        <version>${project.version}</version>
+    </dependency>
 
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
 
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-devtools</artifactId>
+        <scope>runtime</scope>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+#### application.yaml
+
+```yaml
+server:
+  port: 86
+spring:
+  application:
+    name: cloud-consumer-order
+  cloud:
+    consul:
+      # host，port 默认值就是 localhost，8500
+      host: localhost
+      port: 8500
+      discovery:
+        hostname: 192.168.1.10
+        service-name: ${spring.application.name}
+```
+
+#### ConsumerOrderConsulApp86
+
+```java
+@SpringBootApplication
+public class ConsumerOrderConsulApp86 {
+    public static void main(String[] args) {
+        SpringApplication.run(ConsumerOrderConsulApp86.class, args);
+    }
+}
+```
+
+#### config 包
+
+直接复制 80 模块的
+
+#### OrderController
+
+```java
+@RestController
+@Slf4j
+@RequestMapping(value = "/consumer/payment")
+public class OrderController {
+    public static final String PAYMENT_URL = "http://cloud-provider-payment";
+
+    @Resource
+    private RestTemplate restTemplate;
+
+    @GetMapping(value = "/consul")
+    public String paymentInfo() {
+        return restTemplate.getForObject(PAYMENT_URL + "/payment/consul", String.class);
+    }
+}
+```
+
+#### 测试
+
+访问 Consul 的 web 页面
+
+![image-20200523143914966](SpringCloud学习笔记_v2.assets/image-20200523143914966.png)
+
+访问测试，test-86.http
+
+```http
+GET http://localhost:86/consumer/payment/consul
+```
+
+![image-20200523144009081](SpringCloud学习笔记_v2.assets/image-20200523144009081.png)

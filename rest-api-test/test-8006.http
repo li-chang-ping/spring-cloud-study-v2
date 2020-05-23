@@ -1,2 +1,1 @@
 GET http://localhost:8006/payment/consul
-#Accept: application/json

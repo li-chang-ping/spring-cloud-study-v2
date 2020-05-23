@@ -1,0 +1,13 @@
+server:
+  port: 86
+spring:
+  application:
+    name: cloud-consumer-order
+  cloud:
+    consul:
+      # host，port 默认值就是 localhost，8500
+      host: localhost
+      port: 8500
+      discovery:
+        hostname: 192.168.1.10
+        service-name: ${spring.application.name}
