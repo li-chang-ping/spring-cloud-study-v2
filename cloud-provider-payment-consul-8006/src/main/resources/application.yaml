@@ -1,0 +1,18 @@
+server:
+  # consul服务端口
+  port: 8006
+spring:
+  application:
+    name: cloud-provider-payment
+  cloud:
+    consul:
+      # consul注册中心地址
+      host: localhost
+      port: 8500
+      discovery:
+        #因为consul部署在docker中，网络模式是默认的 bridge 模式
+        #consul会访问 http://hostname:8006/actuator/health 来获取节点的实际状态
+        #如果 hostname 为 127.0.0.1，consul 访问的就是内部地址了，结果只能是 404
+        hostname: 192.168.1.10
+        #hostname: 127.0.0.1
+        service-name: ${spring.application.name}

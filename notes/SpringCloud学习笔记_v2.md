@@ -1478,5 +1478,172 @@ GET http://localhost:84/consumer/payment/zk
 
 ## 四、Consul 服务注册与发现
 
+读音：[Consul](https://fanyi.baidu.com/translate#en/zh/Consul) 美 [ˈkɑːnsl] 
+
+### 1、简介
+
+官网：https://www.consul.io/
+
+Consul 是一套开源的分布式服务发现和配置管理系统，由 HashiCrop 公司用 Go 语言开发。
+
+提供了微服务系统中的服务治理，配置中心，控制总线等功能。这些功能中的每一个都可以根据需要单独使用，也可以一起使用构建全方位的服务网格，Consul 提供了一种完整的服务网格解决方案。
+
+它具有很多优点，包括：基于 raft 协议，比较简洁，支持健康检查，同时支持 HTTP 和 DNS 协议，支持跨数据中心的 WAN 集群，提供图形界面，跨平台支持（Linux，Windows，Mac）
+
+#### 1、拥有的功能
+
+##### 1、服务发现
+
+提供 HTTP 和 DNS 两种发现方式
+
+##### 2、健康检查
+
+支持多种方式，HTTP、TCP、Docker、shell 脚本定制化
+
+##### 3、KV 存储
+
+Key、Value 的存储方式
+
+##### 4、多数据中心
+
+Consul 支持多数据中心
+
+##### 5、可视化界面
+
+#### 2、下载地址
+
+https://www.consul.io/downloads
+
+#### 3、学习文档
+
+https://cloud.spring.io/spring-cloud-static/spring-cloud-consul/2.2.2.RELEASE/reference/html/
+
+### 2、启动 Consul
+
+这里以 Docker 的方式启动
+
+```shell
+docker run -d --name cloud_consul_1 -p 8500:8500 consul:1.7.3
+```
+
+浏览器访问：http://localhost:8500/
+
+![image-20200523134641830](SpringCloud学习笔记_v2.assets/image-20200523134641830.png)
+
+### 3、cloud-provider-payment-consul-8006
+
+#### pom.xml
+
+```xml
+<dependencies>
+    <!--SpringCloud consul-server-->
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-consul-discovery</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>com.lcp.springcloud</groupId>
+        <artifactId>cloud-api-commons</artifactId>
+        <version>${project.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-devtools</artifactId>
+        <scope>runtime</scope>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+#### application.yaml
+
+```yaml
+server:
+  # consul服务端口
+  port: 8006
+spring:
+  application:
+    name: cloud-provider-payment
+  cloud:
+    consul:
+      # consul注册中心地址
+      host: localhost
+      port: 8500
+      discovery:
+        #因为consul部署在docker中，网络模式是默认的 bridge 模式
+        #consul会访问 http://hostname:8006/actuator/health 来获取节点的实际状态
+        #如果 hostname 为 127.0.0.1，consul 访问的就是内部地址了，结果只能是 404
+        hostname: 192.168.1.10
+        #hostname: 127.0.0.1
+        service-name: ${spring.application.name}
+```
+
+#### PaymentProviderConsulApp8006
+
+```java
+@SpringBootApplication
+@EnableDiscoveryClient
+public class PaymentProviderConsulApp8006 {
+    public static void main(String[] args) {
+        SpringApplication.run(PaymentProviderConsulApp8006.class, args);
+    }
+}
+```
+
+#### PaymentController 
+
+```java
+@RestController
+@Slf4j
+@RequestMapping(value = "/payment")
+public class PaymentController {
+
+    @Value("${server.port}")
+    private String serverPort;
+
+    @RequestMapping(value = "/consul")
+    public String paymentConsul() {
+        return "Spring Cloud with consul：" + serverPort + "\t" + UUID.randomUUID().toString();
+    }
+}
+```
+
+#### 测试
+
+访问 Consul 的 web 页面
+
+![image-20200523141452697](SpringCloud学习笔记_v2.assets/image-20200523141452697.png)
+
+访问测试，test-8006.http
+
+```http
+GET http://localhost:8006/payment/consul
+```
+
+![image-20200523141559544](SpringCloud学习笔记_v2.assets/image-20200523141559544.png)
+
+### 4、cloud-consumer-order-consul-86
+
+
+
 
 
