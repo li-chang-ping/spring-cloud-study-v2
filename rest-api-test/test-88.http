@@ -1,0 +1,2 @@
+GET http://localhost:88/consumer/payment/get/2
+Accept: application/json

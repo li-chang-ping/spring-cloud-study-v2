@@ -1783,13 +1783,442 @@ CAP
 
 ## 六、Ribbon 负载均衡调用
 
-两年了没多大变化，使用见 `SpringCloud学习笔记_V1`
+### 1、概述
+
+#### 1、是什么
+
+读音：[ribbon](https://fanyi.baidu.com/#en/zh/ribbon) 美 [ˈrɪbən] 
+
+Spring Cloud Ribbon 是基于 Netflix Ribbon 实现的一套 **客户端负载均衡** 的工具。
+
+简单的说，Ribbon 是 Netflix 发布的开源项目，主要功能是提供客户端的软件负载均衡算法，将 Netflix 的中间层服务连接在一起。Ribbon 客户端组件提供一系列完善的配置项如连接超时，重试等。简单的说，就是在配置文件中列出 Load Balancer（简称LB）后面所有的机器，Ribbon 会自动的帮助你基于某种规则（如简单轮询，随机连接等）去连接这些机器。我们也很容易使用 Ribbon 实现自定义的负载均衡算法。
+
+#### 2、作用 LB（负载均衡）
+
+LB，即负载均衡（Load Balance），在微服务或分布式集群中经常用的一种应用。
+
+负载均衡简单的说就是将用户的请求平摊的分配到多个服务上，从而达到系统的 HA（High Available）。常见的负载均衡有软件Nginx，LVS，硬件 F5等。相应的在中间件，例如：dubbo 和 SpringCloud 中均给我们提供了负载均衡，SpringCloud 的负载均衡算法可以自定义。 
+
+##### 集中式 LB
+
+即在服务的消费方和提供方之间使用独立的 LB 设施（可以是硬件，如 F5, 也可以是软件，如 nginx）, 由该设施负责把访问请求通过某种策略转发至服务的提供方。
+
+##### 进程内 LB
+
+将 LB 逻辑集成到消费方，消费方从服务注册中心获知有哪些地址可用，然后自己再从这些地址中选择出一个合适的服务器。
+
+Ribbon 就属于进程内 LB，它只是一个类库，集成于消费方进程，消费方通过它来获取到服务提供方的地址。
+
+##### Ribbon 本地负载均衡与服务端负载均衡的区别
+
+Nginx 是服务端负载均衡，客户端的所有请求都会交给 nginx，然后由 nginx 实现转发请求，负载均衡由服务端实现。
+
+Ribbon 本地负载均衡，在调用微服务接口时，会在注册中心上获取注册信息服务列表后缓存到本地从而在本地实现RPC远程服务调用。
+
+`负载均衡 + RestTemplate`
+
+#### 3、官网
+
+https://github.com/Netflix/ribbon/wiki/Getting-Started
+
+> 目前 Ribbon 也进入了维护模式，未来的替换组件是 `Spring Cloud LoadBalancer`
+
+### 2、Ribbon 负载均衡说明
+
+#### 架构说明
+
+![负载均衡](SpringCloud学习笔记_v2.assets/负载均衡.jpg)
+
+Ribbon 在工作时分成两步
+
+1. 第一步先选择 Eureka Server，优先选择同一区域内负载较少的 Server。
+2. 第二步再根据用户指定的策略，在从 Server 中获取到的服务注册列表中选择一个地址。
+
+Ribbon 其实就是一个软负载均衡的客户端组件，它可以和其它注册中心结合使用，和 Eureka 结合只是其中一个实例。
+
+#### pom.xml
+
+之前的 80 模块没有引入 `spring-cloud-starter-ribbon` 也可以使用 ribbon，是因为 `spring-cloud-starter-netflix-eureka-client` 自带 `spring-cloud-starter-ribbon` 的引用
+
+![image-20200524104248652](SpringCloud学习笔记_v2.assets/image-20200524104248652.png)
+
+### 3、RestTemplate
+
+官方文档：https://docs.spring.io/spring/docs/5.3.0-SNAPSHOT/javadoc-api/org/springframework/web/client/RestTemplate.html
+
+#### getForObject 与 getForEntity
+
+getForObject：返回对象为响应体中的数据转化成的对象，基本上可以理解为 JSON。
+
+getForEntity：返回对象为 ResponseEntity，包含了响应中的一些重要信息，比如响应头，响应状态码，响应体。
+
+可以理解为 getForObject 只获取响应体，getForEntity 获取整个响应。
+
+postForObject 与 postForEntity 同上。
+
+### 4、Ribbon 负载均衡核心组件 IRule
+
+#### IRule
+
+根据特定算法从服务列表选取一个要访问的服务
+
+##### 1、RoundRobinRule
+
+轮询
+
+##### 2、RandomRule
+
+随机
+
+##### 3、AvailabilityFilteringRule
+
+先过滤掉由于多次访问故障而处于熔断器熔断状态的服务以及并发的连接数量超过阈值的服务，然后对剩余的服务列表按照轮询策略进行访问
+
+##### 4、WeightedResponseTimeRule
+
+根据平均响应时间计算所有服务的权重，响应时间越短的服务权重越大，被选中的概率越高。
+
+刚启动时如果统计信息不足，则使用 RoundRobinRule 策略，等到统计信息足够，会切换到 WeightedResponseTimeRule。
+
+##### 5、RetryRule
+
+先按照 RoundRobinRule 的策略获取服务，如果获取服务失败则会在指定的时间内重试，以获取可用的服务。
+
+##### 6、BestAvailabeRule
+
+会先过滤掉由于多次访问故障而处于熔断器熔断状态的服务，然后选择一个并发量最小的服务
+
+##### 7、ZoneAvoidanceRule
+
+默认规则，复合判断 Server 所在区域的性能和 Server 的可用性来选择服务器。
+
+#### 快速全局切换 Ribbon 内置的负载均衡算法
+
+修改 80 模块的 `ApplicationContextConfig`，添加 myRule 方法
+
+```java
+@Bean
+public IRule myRule() {
+    // 切换为随机
+    return new RandomRule();
+}
+```
+
+> 注意，由于 `ApplicationContextConfig` 在主启动类的扫描范围内，所以该切换对模块下所有的 Ribbon 客户端都有效，是全局配置。不需要 @RibbonClient 或者 @RibbonClients。
+
+### 5、RibbonClient
+
+80 模块中，调用了服务 `CLOUD-PROVIDER-PAYMENT`，这就是一个 RibbonClient，假设 80 模块还调用了另一个服务 `CLOUD-PROVIDER-TEST`，这就是另一个 RibbonClient，通过注解 `@RibbonClient` 与 `@RibbonClients` 我们可以为每一个 RibbonClient 指定不同的负载均衡算法或者所有 RibbonClient 统一指定负载均衡算法。
+
+### 6、@RibbonClient/@RibbonClients 自定义RibbonClient
+
+Ribbon 有不止 IRule 一个组件，以下均以配置 IRule 为例。
+
+#### 自定义 RibbonClient
+
+官方推荐的写法是
+
+创建一个配置类（添加 @Configuration），但这个配置类 `不应该在启动类所在包或者其子包下`，再创建一个空类（添加 @Configuration 和 @RibbonClient/@RibbonClients），这个类 `在启动类所在包或者其子包下`，例如如下写法
+
+配置类：MySelfRule1.java
+
+```java
+package com.lcp.myrule;
+
+import com.netflix.loadbalancer.IRule;
+import com.netflix.loadbalancer.RandomRule;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class MySelfRule1 {
+    @Bean
+    public IRule myRule() {
+        // 定义为随机
+        return new RandomRule();
+    }
+}
+```
+
+空类：ConfigRibbonClient.java
+
+```java
+package com.lcp.springcloud.config;
+
+import com.lcp.myrule.MySelfRule1;
+import org.springframework.cloud.netflix.ribbon.RibbonClients;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+@RibbonClient(name = "CLOUD-PROVIDER-PAYMENT", configuration = MySelfRule1.class)
+public class ConfigRibbonClient {
+}
+```
+
+PS：启动类在 springcloud 包下
+
+测试
+
+访问：http://localhost/consumer/payment/getForEntity/2，观察返回数据中的端口是否是随机出现。
+
+官方说明如下所示
+
+![](SpringCloud学习笔记_v2.assets/image-20200514091242958.png)
+
+#### @RibbonClient
+
+为一个 RibbonClient 指定配置
+
+部分源码如下所示
+
+```java
+public @interface RibbonClient {
+    String value() default "";
+    String name() default "";
+    Class<?>[] configuration() default {};
+}
+```
+
+name 和 value 的作用是一样的，写一个即可，用来指定 RibbonClient 的名字，configuration 指定自定义配置类。
+
+例
+
+```java
+@Configuration
+@RibbonClient(name = "CLOUD-PROVIDER-PAYMENT", configuration = MySelfRule1.class)
+@RibbonClient(name = "CLOUD-PROVIDER-test", configuration = MySelfRule2.class)
+public class ConfigRibbonClient {
+}
+```
+
+#### @RibbonClients
+
+为一个或多个 RibbonClient 或所有 RibbonClient 指定配置
+
+部分源码如下所示
+
+```java
+/**
+ * Convenience annotation that allows user to combine multiple <code>@RibbonClient</code>
+ * annotations on a single class (including in Java 7).
+ */
+public @interface RibbonClients {
+    RibbonClient[] value() default {};
+    Class<?>[] defaultConfiguration() default {};
+}
+```
+
+value 不填默认为所有 RibbonClient 指定配置
+
+例
+
+```java
+// 全局配置
+@Configuration
+@RibbonClients(defaultConfiguration = MySelfRule.class)
+public class ConfigRibbonClient {
+}
+
+// 为多个 RibbonClient 单独指定配置，并指定默认的配置
+@Configuration
+@RibbonClients(value = {@RibbonClient(name = "CLOUD-PROVIDER-PAYMENT",configuration = MySelfRule1.class),
+        @RibbonClient(name = "CLOUD-PROVIDER-Test",configuration = MySelfRule2.class)},
+        defaultConfiguration = MySelfRule3.class)
+public class ConfigRibbonClient {
+}
+```
+
+### 7、配置 Ribbon 的两种方式：Java代码方式 & YAML 配置方式
+
+参考：
+
+1. https://blog.csdn.net/lzxlfly/article/details/87895630
+2. https://blog.csdn.net/m0_37592952/article/details/89975057
+
+### 8、手写负载均衡算法并应用
+
+见 `SpringCloud学习笔记_V1`
 
 ## 七、OpenFeign 服务接口调用
 
+官方文档：https://cloud.spring.io/spring-cloud-static/spring-cloud-openfeign/3.0.0.M1/reference/html
 
+GitHub：https://github.com/spring-cloud/spring-cloud-openfeign
 
+### 1、概述
 
+#### 是什么
+
+[Feign](https://github.com/OpenFeign/feign)是声明性Web服务客户端。它使编写Web服务客户端更加容易。要使用Feign，请创建一个接口并对其进行注释。它具有可插入的注释支持，包括Feign注释和JAX-RS注释。Feign还支持可插拔编码器和解码器。Spring Cloud添加了对Spring MVC注释的支持，并支持使用`HttpMessageConverters`Spring Web中默认使用的注释。Spring Cloud集成了Eureka和Spring Cloud LoadBalancer，以在使用Feign时提供负载平衡的http客户端。
+
+#### Feign 能干什么
+
+Feign 旨在使 Java Http 客户端变得更容易。
+
+前面使用 Ribbon + RestTemplate 对 http 请求的封装处理，形成了一套模版化的调用方法。但是在实际开发中，由于对服务依赖的调用可能不止一处，往往一个接口会被多处调用，所以通常都会针对每个微服务自行封装一些客户端类来包装这些依赖服务的调用。
+
+Feign 在此基础上做了进一步的封装，由它来帮助我们定义和实现依赖服务接口的定义。在 Feign 的实现下，我们只需创建一个接口并使用注解的方就来配置它（以前是 Dao 接口上面标注 Mapper 注解，现在是一个微服务接口上面标注一个 Feign 注解），即可完成对服务提供方的接口绑定，简化了使用 Spring Cloud Ribbon 时，手动封装服务调用客户端的开发量。
+
+Feign 集成了 Ribbon，利用 Ribbon 维护了服务列表信息，并目通过内置算法实现了客户端的负载均衡。而与 Ribbon 不同的是，通过 Feign 只需要定义服务绑定接口且以声明式的方法，优雅而简单的实现了服务调用。
+
+#### OpenFeign 与 Feign 的区别
+
+OpenFeign是 Spring Cloud 在 Feign 的基础上支持了 Spring MVC 的注解，如 @RequesMapping 等等。
+
+OpenFeign的 @FeignClient 可以解析 SpringMVC 的 @RequestMapping 注解下的接口，并通过动态代理的方式产生实现类，实现类中做负载均衡并调用其他服务。
+
+> Feign 在消费端使用 !!!
+
+### 2、OpenFeign 使用步骤
+
+#### 接口 + 注解
+
+微服务调用接口 + @FeignClient
+
+#### cloud-consumer-order-feign-88
+
+##### pom.xml
+
+```xml
+<dependencies>
+    <!--openfeign-->
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-openfeign</artifactId>
+    </dependency>
+    <!--eureka client-->
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>com.lcp.springcloud</groupId>
+        <artifactId>cloud-api-commons</artifactId>
+        <version>${project.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <!--监控-->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <!--热部署-->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-devtools</artifactId>
+        <scope>runtime</scope>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+##### application.yaml
+
+```yaml
+server:
+  port: 88
+
+spring:
+  application:
+    name: cloud-consumer-order
+
+eureka:
+  client:
+    service-url:
+      #defaultZone: http://eureka7001.com:7001/eureka
+      defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka
+  instance:
+    # 自定义服务名称信息
+    instance-id: consumer-order-88
+
+    # 心跳时间，即服务续约间隔时间（缺省为30s）
+    lease-renewal-interval-in-seconds: 1
+    # 发呆时间，即服务续约到期时间（缺省为90s）
+    lease-expiration-duration-in-seconds: 2
+    prefer-ip-address: true
+
+info:
+  app.name: spring-cloud-study-v2
+  company.name: www.lichangping.top
+  build.artifactId: $project.artifactId$
+  build.version: $project.version$
+
+```
+
+##### ConsumerOrderFeignApp88
+
+```java
+@SpringBootApplication
+@EnableFeignClients
+public class ConsumerOrderFeignApp88 {
+    public static void main(String[] args) {
+        SpringApplication.run(ConsumerOrderFeignApp88.class, args);
+    }
+}
+```
+
+##### 业务类
+
+业务逻辑接口 + @FeignClient 配置调用 provider 服务
+
+新建 PaymentFeignService 接口并新增注解 @FeignClient
+
+```java
+@Service
+@FeignClient(value = "CLOUD-PROVIDER-PAYMENT")
+public interface PaymentFeignService {
+    /**
+     * 调用服务内的地址
+     * 注意 @PathVariable("id") 中的 id
+     */
+    @GetMapping(value = "/payment/get/{id}")
+    CommonResult<Payment> getPaymentById(@PathVariable("id") Long id);
+}
+```
+
+##### OrderFeignController
+
+```java
+@RestController
+@Slf4j
+@RequestMapping(value = "/consumer/payment")
+public class OrderFeignController {
+    @Resource
+    private PaymentFeignService paymentFeignService;
+
+    @GetMapping(value = "/get/{id}")
+    CommonResult<Payment> getPaymentById(@PathVariable("id") Long id){
+        CommonResult<Payment> paymentById = paymentFeignService.getPaymentById(id);
+        log.info(paymentById.toString());
+        return paymentById;
+    }
+}
+```
+
+#### 测试
+
+启动 7001、7002、8001、8002，88
+
+```http
+GET http://localhost:86/consumer/payment/consul
+```
+
+由于 Feign 自带了负载均衡配置项，所以反复访问 8001、8002 是交替出现
+
+### 3、Feign 超时控制
 
 ## 八、Hystrix 熔断器
 

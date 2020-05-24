@@ -15,10 +15,9 @@ import javax.annotation.Resource;
  */
 @RestController
 @Slf4j
-@RequestMapping(value = "/consumer/payment")
-public class OrderController {
-    // public static final String PAYMENT_URL = "http://localhost:8001";
-    public static final String PAYMENT_URL = "http://CLOUD-PROVIDER-PAYMENT";
+@RequestMapping(value = "/consumer/test")
+public class OrderTestController {
+    public static final String PAYMENT_URL = "http://CLOUD-PROVIDER-TEST";
 
     @Resource
     private RestTemplate restTemplate;
@@ -30,9 +29,7 @@ public class OrderController {
 
     @GetMapping(value = "/get/{id}")
     public CommonResult getPayment(@PathVariable Long id) {
-        CommonResult forObject = restTemplate.getForObject(PAYMENT_URL + "/payment/get/" + id, CommonResult.class);
-        log.info(forObject.toString());
-        return forObject;
+        return restTemplate.getForObject(PAYMENT_URL + "/payment/get/" + id, CommonResult.class);
     }
 
     @RequestMapping(value = "/getForEntity/{id}")

@@ -1,0 +1,27 @@
+server:
+  port: 88
+
+spring:
+  application:
+    name: cloud-consumer-order
+
+eureka:
+  client:
+    service-url:
+      #defaultZone: http://eureka7001.com:7001/eureka
+      defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka
+  instance:
+    # 自定义服务名称信息
+    instance-id: consumer-order-88
+
+    # 心跳时间，即服务续约间隔时间（缺省为30s）
+    lease-renewal-interval-in-seconds: 1
+    # 发呆时间，即服务续约到期时间（缺省为90s）
+    lease-expiration-duration-in-seconds: 2
+    prefer-ip-address: true
+
+info:
+  app.name: spring-cloud-study-v2
+  company.name: www.lichangping.top
+  build.artifactId: $project.artifactId$
+  build.version: $project.version$

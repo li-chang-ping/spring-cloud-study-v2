@@ -9,3 +9,11 @@ Content-Type: application/json
 {
   "serial": "Test7"
 }
+
+###
+
+GET http://localhost/consumer/payment/getForEntity/2
+
+###
+
+GET http://localhost/consumer/test/getForEntity/2
