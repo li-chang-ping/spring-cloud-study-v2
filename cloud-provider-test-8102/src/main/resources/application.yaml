@@ -1,0 +1,37 @@
+server:
+  port: 8102
+
+spring:
+  application:
+    name: cloud-provider-test
+  datasource:
+    # 当前数据源操作类型
+    type: com.alibaba.druid.pool.DruidDataSource
+    # mysql驱动包
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/cloud2020
+    username: root
+    password: 123456
+
+mybatis:
+  mapperLocations: classpath:mapper/*.xml
+  # 所有Entity别名类所在包
+  type-aliases-package: com.lcp.springcloud.entities
+
+eureka:
+  client:
+    service-url:
+      #defaultZone: http://eureka7001.com:7001/eureka
+      defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka
+    #以下默认就是true，不填也行
+    #fetch-registry: true
+    #register-with-eureka: true
+  instance:
+    # 自定义服务名称信息
+    instance-id: provider-test-8102
+
+    # 心跳时间，即服务续约间隔时间（缺省为30s）
+    lease-renewal-interval-in-seconds: 1
+    # 发呆时间，即服务续约到期时间（缺省为90s）
+    lease-expiration-duration-in-seconds: 2
+    prefer-ip-address: true
