@@ -2220,6 +2220,105 @@ GET http://localhost:86/consumer/payment/consul
 
 ### 3、Feign 超时控制
 
+#### 案例演示
+
+8001 模块 OrderFeignController 增加以下方法，故意增加执行时间
+
+```java
+    @GetMapping(value = "/feign/timeout")
+    public String paymentFeignTimeout() {
+        // 暂停几秒钟
+        try { TimeUnit.SECONDS.sleep(3); } catch (InterruptedException e) { e.printStackTrace(); }
+        return serverPort;
+    }
+```
+
+88 模块 PaymentFeignService 增加以下方法
+
+```java
+@GetMapping(value = "/payment/feign/timeout")
+String paymentFeignTimeout();
+```
+
+88 模块 OrderFeignController 增加以下方法
+
+```java
+@GetMapping(value = "/payment/feign/timeout")
+public String paymentFeignTimeout() {
+    // openfeign-ribbon，客户端一般默认等待1秒钟
+    return paymentFeignService.paymentFeignTimeout();
+}
+```
+
+启动 7001，7002，8001，88
+
+访问：http://localhost:8001/payment/feign/timeout，3秒后出现数据
+
+访问：http://localhost:88/consumer/payment/feign/timeout，页面返回 connect timed out 超时错误
+
+#### 配置
+
+Feign 客户端默认只等待一秒钟，但是服务端处理需要超过一秒钟，导致 Feign 客户端不想等待了，直接返回报错。为了避免这样的情况，需要设置 Feign 客户端的超时控制。
+
+yaml 中配置
+
+```yaml
+# 设置feign客户端超时时间(OpenFeign默认支持ribbon)
+ribbon:
+  # 指的是建立连接所用的时间,适用于网络状态正常的情况下,两端连接所用的时间
+  ReadTimeout: 5000
+  # 指的是建立连接后从服务器读取到可用资源所用的时间
+  ConnectTimeout: 5000
+```
+
+### 4、Feign 日志打印功能
+
+Feign 提供了日志打印功能，我们可以通过配置来调整日志级别，从而了解 Feign 中 Http 请求的细节。说白了就是对 Feign 接口的调用情况进行监控和输出。
+
+#### 日志级别
+
+NONE：默认的，不显示任何日志
+
+BASIC：仅记录请求方法、URL、响应状态码及执行时间
+
+HEADERS：除了 BASIC 中定义的信息之外，还有请求和响应的头信息
+
+FULL：除了 HEADERS 中定义的信息之外，还有请求和响应的正文及元数据。
+
+#### 配置日志
+
+##### 编写配置 Bean
+
+FeignConfig.java
+
+```java
+@Configuration
+public class FeignConfig {
+
+    /**
+     * feignClient配置日志级别
+     */
+    @Bean
+    public Logger.Level feignLoggerLevel() {
+        // 请求和响应的头信息,请求和响应的正文及元数据
+        return Logger.Level.FULL;
+    }
+}
+```
+
+##### YAML 中指定需要开启日志的 Feign 客户端
+
+```yaml
+logging:
+  level:
+    # feign日志以什么级别监控哪个接口
+    com.lcp.springcloud.service.PaymentFeignService: debug
+```
+
+##### 后台查看日志
+
+![image-20200525214125490](SpringCloud学习笔记_v2.assets/image-20200525214125490.png)
+
 ## 八、Hystrix 熔断器
 
 
