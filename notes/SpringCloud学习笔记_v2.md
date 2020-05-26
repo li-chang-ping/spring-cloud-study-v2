@@ -2732,6 +2732,45 @@ public String paymentInfoTimeOutHandler(Integer id) {
 
 题外话，切记：对 @HystrixCommand 内属性的修改建议重启微服务。
 
+pom.xml
+
+```xml
+<!--hystrix-->
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-netflix-hystrix</artifactId>
+</dependency>
+```
+
+application.yaml
+
+```yaml
+feign:
+  hystrix:
+    enabled: true
+```
+
+主启动添加 @EnableHystrix
+
+修改 OrderHystrixController
+
+```java
+@GetMapping("/consumer/payment/hystrix/timeout/{id}")
+@HystrixCommand(fallbackMethod = "paymentTimeOutFallbackMethod", commandProperties = {
+    @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "1500")
+})
+public String paymentInfoTimeOut(@PathVariable("id") Integer id) {
+    //int age = 10/0;
+    return paymentHystrixService.paymentInfoTimeOut(id);
+}
+
+public String paymentTimeOutFallbackMethod(@PathVariable("id") Integer id) {
+    return "我是消费者80,对方支付系统繁忙请10秒种后再试或者自己运行出错请检查自己,o(╥﹏╥)o";
+}
+```
+
+
+
 #### 服务熔断
 
 

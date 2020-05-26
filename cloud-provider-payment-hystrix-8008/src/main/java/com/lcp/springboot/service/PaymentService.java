@@ -30,7 +30,7 @@ public class PaymentService {
     })
     public String paymentInfoTimeOut(Integer id) {
         // 计算异常
-        int age = 10 / 0;
+        // int age = 10 / 0;
         // 由3秒改为5秒
         int timeNumber = 5;
         try {
