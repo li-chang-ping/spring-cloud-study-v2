@@ -1,4 +1,4 @@
-# Spring Cloud 学习笔记
+# Spring Cloud 学习笔记_v2（第一部分）
 
 `Spring Cloud Hoxton SR4`
 
@@ -2650,7 +2650,7 @@ public class OrderHystrixController {
 
 8008 同一层次的其它接口被困死，因为 tomcat 线程池里面的工作线程已经被挤占完毕
 
-80 此时调用 8008，客户端访问响应缓慢，转圈甚至超时
+88 此时调用 8008，客户端访问响应缓慢，转圈甚至超时
 
 #### 上述结论
 
@@ -2668,11 +2668,13 @@ public class OrderHystrixController {
 
 解决
 
-- 对方服务（8008）超时了，调用者（80）不能一直卡死等待，必须要有服务降级
-- 对方服务（8008）宕机了，调用者（80）不能一直卡死等待，必须要有服务降级
-- 对方服务（8008）OK，调用者（80）自己出故障或有自我要求（自己的等待时间小于服务提供者），自己处理降级
+- 对方服务（8008）超时了，调用者（88）不能一直卡死等待，必须要有服务降级
+- 对方服务（8008）宕机了，调用者（88）不能一直卡死等待，必须要有服务降级
+- 对方服务（8008）OK，调用者（88）自己出故障或有自我要求（自己的等待时间小于服务提供者），自己处理降级
 
 #### 服务降级
+
+> 一般放在客户端（此客户端非彼客户端）
 
 ##### 降级配置
 
@@ -2687,8 +2689,13 @@ public class OrderHystrixController {
 修改 PaymentService
 
 ```java
-@HystrixCommand(fallbackMethod = "paymentInfoTimeOutHandler")
+// 接受的超时时间为3秒
+@HystrixCommand(fallbackMethod = "paymentInfoTimeOutHandler", commandProperties = {
+            @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "3000")
+    })
 public String paymentInfoTimeOut(Integer id) {
+    // 计算异常
+    int age = 10 / 0;
     // 由3秒改为5秒
     int timeNumber = 5;
     try {
@@ -2706,6 +2713,11 @@ public String paymentInfoTimeOutHandler(Integer id) {
 }
 ```
 
+上面故意制造了2个异常
+
+1. int age = 10 / 0;	// 计算异常
+2. 设置超时为3秒，实际需要运行5秒，超时异常
+
 > @HystrixCommand 报异常后处理流程
 >
 > 一旦调用服务方法失败并抛出错误信息后，会自动调用 @HystrixCommand 标注好的 fallbackMethod 指定的方法
@@ -2714,9 +2726,11 @@ public String paymentInfoTimeOutHandler(Integer id) {
 
 @EnableCircuitBreaker
 
-##### 80 fallback
+##### 88 fallback
 
+88 订单微服务，也可以更好的保护自己，自己也依样画葫芦进行客户端降级保护。
 
+题外话，切记：对 @HystrixCommand 内属性的修改建议重启微服务。
 
 #### 服务熔断
 

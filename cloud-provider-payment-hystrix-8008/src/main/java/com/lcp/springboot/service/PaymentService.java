@@ -1,6 +1,7 @@
 package com.lcp.springboot.service;
 
 import com.netflix.hystrix.contrib.javanica.annotation.HystrixCommand;
+import com.netflix.hystrix.contrib.javanica.annotation.HystrixProperty;
 import org.springframework.stereotype.Service;
 
 import java.util.concurrent.TimeUnit;
@@ -20,9 +21,16 @@ public class PaymentService {
 
     /**
      * 超时访问
+     *
+     * <code>@HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "3000")</code>
+     * 设置线程的超时时间为3秒，由于线程内设置为5秒，所以必定超时
      */
-    @HystrixCommand(fallbackMethod = "paymentInfoTimeOutHandler")
+    @HystrixCommand(fallbackMethod = "paymentInfoTimeOutHandler", commandProperties = {
+            @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "3000")
+    })
     public String paymentInfoTimeOut(Integer id) {
+        // 计算异常
+        int age = 10 / 0;
         // 由3秒改为5秒
         int timeNumber = 5;
         try {
@@ -35,7 +43,7 @@ public class PaymentService {
     }
 
     public String paymentInfoTimeOutHandler(Integer id) {
-        return "线程池:" + Thread.currentThread().getName() + " paymentInfoTimeOutHandler,id:" + id + "\t" +
+        return "线程池:" + Thread.currentThread().getName() + " 系统繁忙，请稍后再试,id:" + id + "\t" +
                 "u╥﹏╥...";
     }
 }
