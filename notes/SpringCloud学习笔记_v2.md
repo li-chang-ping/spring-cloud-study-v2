@@ -2769,9 +2769,122 @@ public String paymentTimeOutFallbackMethod(@PathVariable("id") Integer id) {
 }
 ```
 
+##### 目前问题
 
+每一个业务方法对应一个兜底的方法，代码膨胀
+
+统一和自定义分开
+
+##### 解决办法
+
+1. feign 接口系列
+
+   `@DefaultProperties((defaultFallback = "")`，每个方法配置一个服务降级方法，技术上可以，实际上智障，除了个别重要核心业务有专属，其它普通的可以通过 @DefaultProperties 统一处理。通用的和独享的各自分开，避免了代码膨胀，合理减少了代码量。
+
+   修改 OrderHystrixController
+
+   ```java
+   @RestController
+   @Slf4j
+   @DefaultProperties(defaultFallback = "paymentGlobalFallbackMethod")
+   public class OrderHystrixController {
+       @Resource
+       private PaymentHystrixService paymentHystrixService;
+   
+       @GetMapping("/consumer/payment/hystrix/ok/{id}")
+       public String paymentInfoOk(@PathVariable("id") Integer id) {
+           return paymentHystrixService.paymentInfoOk(id);
+       }
+   
+       @GetMapping("/consumer/payment/hystrix/timeout/{id}")
+       @HystrixCommand()
+       // @HystrixCommand(fallbackMethod = "paymentTimeOutFallbackMethod", commandProperties = {
+       //         @HystrixProperty(name = "execution.isolation.thread.timeoutInMilliseconds", value = "1500")
+       // })
+       public String paymentInfoTimeOut(@PathVariable("id") Integer id) {
+           int age = 10 / 0;
+           return paymentHystrixService.paymentInfoTimeOut(id);
+       }
+   
+       public String paymentTimeOutFallbackMethod(@PathVariable("id") Integer id) {
+           return "我是消费者80,对方支付系统繁忙请10秒种后再试或者自己运行出错请检查自己,o(╥﹏╥)o";
+       }
+   
+       /**
+        * 全局fallback
+        */
+       public String paymentGlobalFallbackMethod() {
+           return "Global异常处理信息,请稍后重试.o(╥﹏╥)o";
+       }
+   }
+   ```
+
+2. 服务降级，客户端去调用服务端，碰上服务器宕机或关闭
+
+   本次案例服务降级处理是在客户端 88 实现完成的，与服务端 8008 没有关系，只需要为 Feign 客户端定义的接口添加一个服务降级处理的实现类即可实现解耦。
+
+   要面对的异常
+
+   - 运行
+   - 超时
+   - 宕机
+
+   上面的代码虽然避免了代码膨胀，但是降级处理方法仍然和业务代码耦合在一起。
+
+   新建 PaymentFallbackService 类 实现 PaymentHystrixService 接口
+
+   ```java
+   @Component
+   public class PaymentFallbackService implements PaymentHystrixService{
+       @Override
+       public String paymentInfoOk(Integer id) {
+           return "----- PaymentFallbackService fall back -- paymentInfoOk，u（；´д｀）ゞ";
+       }
+   
+       @Override
+       public String paymentInfoTimeOut(Integer id) {
+           return "----- PaymentFallbackService fall back -- paymentInfoTimeOut，u≡(▔﹏▔)≡";
+       }
+   }
+   ```
+
+   修改 PaymentHystrixService
+
+   ```java
+   @FeignClient(value = "CLOUD-PROVIDER-PAYMENT-HYSTRIX", fallback = PaymentFallbackService.class)
+   ```
+
+   测试
+
+   启动 7001，7002，8008，88
+
+   正常访问：http://localhost:88/consumer/payment/hystrix/ok/31
+
+   故意关掉 8008
+
+   再次访问：http://localhost:88/consumer/payment/hystrix/ok/31
+
+   ![image-20200526211006933](SpringCloud学习笔记_v2.assets/image-20200526211006933.png)
+
+   客户端自己调用提示，此时服务端已经 down，但是我们做了服务降级处理，让客户端在服务端不可用时不会一直等待，空耗资源。
 
 #### 服务熔断
+
+##### 断路器
+
+原理类似保险丝
+
+##### 熔断是什么
+
+大神论文：https://martinfowler.com/bliki/CircuitBreaker.html
+
+
+
+
+
+
+
+
 
 
 
