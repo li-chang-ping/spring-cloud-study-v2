@@ -19,6 +19,7 @@
         <module>cloud-provider-payment-8002</module>
         <module>cloud-provider-payment-zk-8004</module>
         <module>cloud-provider-payment-consul-8006</module>
+        <module>cloud-provider-payment-hystrix-8008</module>
         <module>cloud-provider-test-8101</module>
         <module>cloud-provider-test-8102</module>
         <module>cloud-consumer-order-feign-88</module>

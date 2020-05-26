@@ -1,0 +1,5 @@
+GET http://localhost:8008/payment/hystrix/ok/1
+
+###
+
+GET http://localhost:8008/payment/hystrix/timeout/1

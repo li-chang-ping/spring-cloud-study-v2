@@ -2321,6 +2321,417 @@ logging:
 
 ## 八、Hystrix 熔断器
 
+### 1、概述
+
+#### 1、分布式系统面临的问题
+
+![](SpringCloud学习笔记_v2.assets/image-20200514193147962.png)
+
+服务雪崩
+多个微服务之间调用的时候，假设微服务A调用微服务B和微服务C，微服务B和微服务C又调用其它的微服务，这就是所谓的“扇出”。如果扇出的链路上某个微服务的调用响应时间过长或者不可用，对微服务A的调用就会占用越来越多的系统资源，进而引起系统崩溃，所谓的“雪崩效应”.
+
+对于高流量的应用来说，单一的后端依赖可能会导致所有服务器上的所有资源都在几秒钟内饱和。比失败更糟糕的是，这些应用程序还可能导致服务之间的延迟增加，备份队列，线程和其他系统资源紧张，导致整个系统发生更多的级联故障。这些都表示需要对故障和延迟进行隔离和管理，以便单个依赖关系的失败，不能取消整个应用程序或系统。
+
+**一般情况对于服务依赖的保护主要有3种解决方案：**
+
+1. 熔断模式：这种模式主要是参考电路熔断，如果一条线路电压过高，保险丝会熔断，防止火灾。放到我们的系统中，如果某个目标服务调用慢或者有大量超时，此时，熔断该服务的调用，对于后续调用请求，不在继续调用目标服务，直接返回，快速释放资源。如果目标服务情况好转则恢复调用。
+
+2. 隔离模式：这种模式就像对系统请求按类型划分成一个个小岛的一样，当某个小岛被火少光了，不会影响到其他的小岛。例如可以对不同类型的请求使用线程池来资源隔离，每种类型的请求互不影响，如果一种类型的请求线程资源耗尽，则对后续的该类型请求直接返回，不再调用后续资源。这种模式使用场景非常多，例如将一个服务拆开，对于重要的服务使用单独服务器来部署，再或者公司最近推广的多中心。
+
+3. 限流模式：上述的熔断模式和隔离模式都属于出错后的容错处理机制，而限流模式则可以称为预防模式。限流模式主要是提前对各个类型的请求设置最高的QPS阈值，若高于设置的阈值则对该请求直接返回，不再调用后续资源。这种模式不能解决服务依赖的问题，只能解决系统整体资源分配问题，因为没有被限流的请求依然有可能造成雪崩效应。
+
+#### 2、是什么
+
+读音：[hystrix](https://fanyi.baidu.com/#en/zh/hystrix)
+
+Hystrix是一个用于处理分布式系统的延迟和容错的开源库，在分布式系统里，许多依赖不可避免的会调用失败，比如超时、异常等，Hystrix能够保证在一个依赖出问题的情况下，不会导致整体服务失败，避免级联故障，以提高分布式系统的弹性。
+
+“断路器”本身是一种开关装置，当某个服务单元发生故障之后，通过断路器的故障监控（类似熔断保险丝），向调用方返回一个符合预期的、可处理的备选响应（FallBack），而不是长时间的等待或者抛出调用方无法处理的异常，这样就保证了服务调用方的线程不会被长时间、不必要地占用，从而避免了故障在分布式系统中的蔓延，乃至雪崩。
+
+#### 3、能干什么
+
+1. 服务降级
+
+   服务降级，其实就是线程池中单个线程障处理，防止单个线程请求时间太长，导致资源长期被占有而得不到释放，从而导致线程池被快速占用完，导致服务崩溃。
+
+   Hystrix 能解决如下问题：
+
+   1. 请求超时降级，线程资源不足降级，降级之后可以返回自定义数据
+   2. 线程池隔离降级，分布式服务可以针对不同的服务使用不同的线程池，从而互不影响
+   3. 自动触发降级与恢复
+   4. 实现请求缓存和请求合并
+
+2. 服务熔断
+
+   熔断模式，这种模式主要是参考电路熔断，如果一条线路电压过高，保险丝会熔断，防止火灾。放到我们的系统中，如果某个目标服务调用慢或者有大量超时，此时，熔断该服务的调用，对于后续调用请求，不在继续调用目标服务，直接返回，快速释放资源。如果目标服务情况好转则恢复调用。
+
+3. 服务限流
+
+   限流模式主要是提前对各个类型的请求设置最高的 QPS 阈值，若高于设置的阈值则对该请求直接返回，不再调用后续资源。这种模式不能解决服务依赖的问题，只能解决系统整体资源分配问题，因为没有被限流的请求依然有可能造成雪崩效应。
+
+4. 接近实时的监控
+
+   ........
+
+参考：
+
+1. https://www.cnblogs.com/cjsblog/p/9391819.html
+2. https://my.oschina.net/7001/blog/1619842
+
+#### 4、官网资料
+
+https://github.com/Netflix/Hystrix/wiki/How-To-Use
+
+#### 5、Hystrix 官宣，停更进维
+
+被动修复 BUG，不再接受合并请求，不再发布新版本
+
+![image-20200525220221082](SpringCloud学习笔记_v2.assets/image-20200525220221082.png)
+
+### 2、Hystrix 重要概念
+
+#### 服务降级
+
+服务器忙，请稍后再试，不让客户端一直等待，并立即返回一个友好提示（fallback）。
+
+哪些情况会发出降级
+
+- 程序运行异常
+- 超时
+- 服务熔断触发服务降级
+- 线程池/信号量也会导致服务降级
+
+#### 服务熔断
+
+达到最大服务访问后，直接拒绝访问，调用服务降级方法，返回友好提示（好比保险丝）
+
+服务的降级 --> 进而熔断 --> 恢复调用链路
+
+#### 服务限流
+
+秒杀等高并发场景，防止一窝蜂涌入，限制单位时间进入的请求
+
+### 3、Hystrix 案例
+
+#### 构建
+
+新建 cloud-provider-payment-hystrix-8008
+
+##### pom.xml
+
+```xml
+<dependencies>
+    <!--hystrix-->
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-netflix-hystrix</artifactId>
+    </dependency>
+    <!--eureka client-->
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-netflix-eureka-server</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>com.lcp.springcloud</groupId>
+        <artifactId>cloud-api-commons</artifactId>
+        <version>${project.version}</version>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <!--监控-->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <!--热部署-->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-devtools</artifactId>
+        <scope>runtime</scope>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+##### applicatin.yaml
+
+```yaml
+server:
+  port: 8008
+spring:
+  application:
+    name: cloud-provider-payment-hystrix
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka
+  instance:
+    instance-id: provider-payment-8008
+    lease-renewal-interval-in-seconds: 1
+    lease-expiration-duration-in-seconds: 2
+    prefer-ip-address: true
+```
+
+##### PaymentProviderHystrixApp8008 主启动类
+
+```java
+@SpringBootApplication
+@EnableEurekaClient
+public class PaymentProviderHystrixApp8008 {
+    public static void main(String[] args) {
+        SpringApplication.run(PaymentProviderHystrixApp8008.class, args);
+    }
+}
+```
+
+##### PaymentService
+
+```java
+@Service
+public class PaymentService {
+    /**
+     * 正常访问
+     */
+    public String paymentInfoOk(Integer id) {
+        return "线程池:" + Thread.currentThread().getName() + " paymentInfo_OK,id:" + id + "\t" + "O(∩_∩)O哈哈~";
+    }
+
+    /**
+     * 超时访问
+     */
+    public String paymentInfoTimeOut(Integer id) {
+        int timeNumber = 3;
+        try {
+            // 暂停3秒钟
+            TimeUnit.SECONDS.sleep(timeNumber);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return "线程池:" + Thread.currentThread().getName() + " paymentInfo_TimeOut,id:" + id + "\t" +
+                "O(∩_∩)O哈哈~  耗时(秒)" + timeNumber;
+    }
+}
+```
+
+##### PaymentController
+
+```java
+@RestController
+@Slf4j
+public class PaymentController {
+    @Resource
+    private PaymentService paymentService;
+
+    @Value("${server.port}")
+    private String servicePort;
+
+    /**
+     * 正常访问
+     */
+    @GetMapping("/payment/hystrix/ok/{id}")
+    public String paymentInfoOk(@PathVariable("id") Integer id) {
+        String result = paymentService.paymentInfoOk(id);
+        log.info("*****result:" + result);
+        return result;
+    }
+
+    /**
+     * 超时访问
+     */
+    @GetMapping("/payment/hystrix/timeout/{id}")
+    public String paymentInfoTimeOut(@PathVariable("id") Integer id) {
+        String result = paymentService.paymentInfoTimeOut(id);
+        log.info("*****result:" + result);
+        return result;
+
+    }
+}
+```
+
+##### 测试
+
+启动 7001，7002，8008
+
+test-8008.http
+
+```http
+GET http://localhost:8008/payment/hystrix/ok/1
+
+###
+
+GET http://localhost:8008/payment/hystrix/timeout/1
+```
+
+访问均为成功
+
+以此为基础，从正确 --> 错误 --> 降级熔断 --> 恢复
+
+#### 高并发测试
+
+##### Jmeter 压测测试
+
+开启 Jmeter，来 20000 个并发压死 8008，20000 个请求都去访问 paymentInfoTimeOut
+
+![image-20200526145512336](SpringCloud学习笔记_v2.assets/image-20200526145512336.png)
+
+![image-20200526145531943](SpringCloud学习笔记_v2.assets/image-20200526145531943.png)
+
+此时再去访问：http://localhost:8008//payment/hystrix/ok/2，会发现，原本不需要等待的接口，现在也需要等待了
+
+##### Jmeter 压测结论
+
+上面只是服务提供者 8008 自己测试，如果此时外部的消费者也来访问，那消费者只能干等，最终导致消费端响应也变慢，服务端 8008 被拖死。
+
+##### cloud-consumer-order-feign-88 加入
+
+添加 PaymentHystrixService，OrderHystrixController
+
+PaymentHystrixService
+
+```java
+@Service
+@FeignClient(value = "CLOUD-PROVIDER-PAYMENT-HYSTRIX")
+public interface PaymentHystrixService {
+
+    @GetMapping("/payment/hystrix/ok/{id}")
+    String paymentInfoOk(@PathVariable("id") Integer id);
+
+    @GetMapping("/payment/hystrix/timeout/{id}")
+    String paymentInfoTimeOut(@PathVariable("id") Integer id);
+}
+```
+
+OrderHystrixController
+
+```java
+@RestController
+@Slf4j
+public class OrderHystrixController {
+    @Resource
+    private PaymentHystrixService paymentHystrixService;
+
+    @GetMapping("/consumer/payment/hystrix/ok/{id}")
+    public String paymentInfoOk(@PathVariable("id") Integer id) {
+        return paymentHystrixService.paymentInfoOk(id);
+    }
+
+    @GetMapping("/consumer/payment/hystrix/timeout/{id}")
+    public String paymentInfoTimeOut(@PathVariable("id") Integer id) {
+        return paymentHystrixService.paymentInfoTimeOut(id);
+    }
+}
+```
+
+正常测试
+
+启动 88 模块
+
+访问：http://localhost:88/consumer/payment/hystrix/ok/1，几乎没有延迟
+
+高并发测试
+
+开 2W 线程压测 8008
+
+再访问：http://localhost:88/consumer/payment/hystrix/ok/1，开始出现 2~3 秒的延迟（由于上面将 feign 的超时延长到了5秒，这里并没有报超时，当线程开到 3W 直接报超时）
+
+#### 故障现象和导致的原因
+
+8008 同一层次的其它接口被困死，因为 tomcat 线程池里面的工作线程已经被挤占完毕
+
+80 此时调用 8008，客户端访问响应缓慢，转圈甚至超时
+
+#### 上述结论
+
+正因为有上述故障或不佳表现，所以需要降级、容错、限流
+
+#### 如何解决？解决的要求
+
+超时导致服务变慢（转圈）
+
+- 超时不再等待
+
+出错（宕机或程序运行出错）
+
+- 出错要有兜底
+
+解决
+
+- 对方服务（8008）超时了，调用者（80）不能一直卡死等待，必须要有服务降级
+- 对方服务（8008）宕机了，调用者（80）不能一直卡死等待，必须要有服务降级
+- 对方服务（8008）OK，调用者（80）自己出故障或有自我要求（自己的等待时间小于服务提供者），自己处理降级
+
+#### 服务降级
+
+##### 降级配置
+
+@HystrixCommand
+
+##### 8008 先从自身找问题
+
+设置自身调用超时时间的峰值，峰值内可以正常运行，超过了需要有兜底的方法处理，作为服务降级的 fallback
+
+##### 8008 fallback
+
+修改 PaymentService
+
+```java
+@HystrixCommand(fallbackMethod = "paymentInfoTimeOutHandler")
+public String paymentInfoTimeOut(Integer id) {
+    // 由3秒改为5秒
+    int timeNumber = 5;
+    try {
+        TimeUnit.SECONDS.sleep(timeNumber);
+    } catch (InterruptedException e) {
+        e.printStackTrace();
+    }
+    return "线程池:" + Thread.currentThread().getName() + " paymentInfo_TimeOut,id:" + id + "\t" +
+        "O(∩_∩)O哈哈~  耗时(秒)" + timeNumber;
+}
+
+public String paymentInfoTimeOutHandler(Integer id) {
+    return "线程池:" + Thread.currentThread().getName() + " paymentInfoTimeOutHandler,id:" + id + "\t" +
+        "u╥﹏╥...";
+}
+```
+
+> @HystrixCommand 报异常后处理流程
+>
+> 一旦调用服务方法失败并抛出错误信息后，会自动调用 @HystrixCommand 标注好的 fallbackMethod 指定的方法
+
+主启动类激活
+
+@EnableCircuitBreaker
+
+##### 80 fallback
+
+
+
+#### 服务熔断
+
+
+
+#### 服务限流
+
+
+
+### 4、Hystrix 工作流程
+
+
+
+### 5、HystrixDashboard 服务监控
+
 
 
 
