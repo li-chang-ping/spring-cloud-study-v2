@@ -23,6 +23,7 @@
         <module>cloud-provider-test-8101</module>
         <module>cloud-provider-test-8102</module>
         <module>cloud-consumer-order-feign-88</module>
+        <module>cloud-consumer-hystrix-dashboard-9001</module>
     </modules>
     <packaging>pom</packaging>
 

@@ -2045,6 +2045,8 @@ public class ConfigRibbonClient {
 
 GitHub：https://github.com/spring-cloud/spring-cloud-openfeign
 
+> OpenFeign 不仅支持服务接口调用，由于其内置 Ribbon、Hystrix 支持，所以也支持负载均衡，服务降级，服务熔断
+
 ### 1、概述
 
 #### 是什么
@@ -2318,6 +2320,10 @@ logging:
 ##### 后台查看日志
 
 ![image-20200525214125490](SpringCloud学习笔记_v2.assets/image-20200525214125490.png)
+
+### 5、Feign 熔断
+
+参考：https://blog.csdn.net/zzhuan_1/article/details/85839663
 
 ## 八、Hystrix 熔断器
 
@@ -3073,13 +3079,143 @@ public String paymentCircuitBreaker(@PathVariable("id") Integer id) {
 
 ### 4、Hystrix 工作流程
 
+官方说明：https://github.com/Netflix/Hystrix/wiki/How-it-Works
 
+官网图例
+
+![img](SpringCloud学习笔记_v2.assets/hystrix-command-flow-chart.png)
+
+
+
+![image-20200527161436952](SpringCloud学习笔记_v2.assets/image-20200527161436952.png)
 
 ### 5、HystrixDashboard 服务监控
 
+除了隔离依赖服务的调用以外，Hystrix 还提供了准实时的调用监控（Hystrix Dashboard），Hystrix 会持续地记录所有通过 Hystrix 发起的请求的执行信息，并以统计报表和图形的形式展示给用户，包括每秒执行多少请求多少成功，多少失败等。Netflix 通过 hystrix-metrics-event-stream 项目实现了对以上指标的监控。Spring Cloud 也提供了 Hystrix Dashboard 的整合，对监控内容转化成可视化界面。
+
+> 注意：只有经过服务降级/熔断处理的路径才能被监控
+
+##### 仪表盘 9001
+
+新建 cloud-consumer-hystrix-dashboard-9001
+
+pom.xml
+
+```xml
+<dependencies>
+    <!--hystrix dashboard-->
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-netflix-hystrix-dashboard</artifactId>
+    </dependency>
+    <!--监控-->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <!--热部署-->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-devtools</artifactId>
+        <scope>runtime</scope>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+YAML
+
+```yaml
+server:
+  port: 9001
+```
+
+HystrixDashBoardApp9001
+
+```java
+@SpringBootApplication
+@EnableHystrixDashboard
+public class HystrixDashBoardApp9001 {
+    public static void main(String[] args) {
+        SpringApplication.run(HystrixDashBoardApp9001.class, args);
+    }
+}
+```
+
+> 想要被监控的微服务都需要以下依赖
+>
+> ```xml
+> <dependency>
+>     <groupId>org.springframework.boot</groupId>
+>     <artifactId>spring-boot-starter-actuator</artifactId>
+> </dependency>
+> ```
+
+启动 7001，7002，9001，访问：http://localhost:9001/hystrix
+
+##### 监控 8008
+
+修改 PaymentProviderHystrixApp8008，加入以下内容
+
+```java
+/**
+     * 此配置是为了服务监控而配置，与服务容错本身无观，springCloud 升级之后的坑
+     * ServletRegistrationBean因为springboot的默认路径不是/hystrix.stream
+     * 只要在自己的项目中配置上下面的servlet即可
+     */
+@Bean
+public ServletRegistrationBean getServlet() {
+    HystrixMetricsStreamServlet streamServlet = new HystrixMetricsStreamServlet();
+    ServletRegistrationBean<HystrixMetricsStreamServlet> registrationBean = new ServletRegistrationBean<>(streamServlet);
+    registrationBean.setLoadOnStartup(1);
+    registrationBean.addUrlMappings("/hystrix.stream");
+    registrationBean.setName("HystrixMetricsStreamServlet");
+    return registrationBean;
+}
+```
+
+> SpringCloud 升级之后的坑
+
+9001 监控 8008，查看断路器状态
+
+测试地址
+
+1. http://localhost:8008/payment/circuit/1，正确
+2. http://localhost:8008/payment/circuit/-1，错误
+
+先访问正确地址，再访问错误地址，再访问正确地址，可以看到图中 `Circuit` 字段值的变化
+
+##### 监控图说明
+
+1. 7色
+
+2. 1圈：共有两种含义。它通过颜色的变化代表了实例的健康程度，它的健康度从绿色 < 黄色 < 橙色 < 红色递减。
+
+   该实心圆除了颜色的变化之外，它的大小也会根据实例的请求流量发生变化，流量越大该实心圆就越大。所以通过该实心圆的展示，就可以在大量的实例中快速的发现故障实例和高压力实例。
+
+3. 1线：曲线：用来记录2分钟内流量的相对变化，可以通过它来观察到流量的上升和下降趋势。
+
+![image-20200527172453720](SpringCloud学习笔记_v2.assets/image-20200527172453720.png)
 
 
 
+![image-20200527172620525](SpringCloud学习笔记_v2.assets/image-20200527172620525.png)
+
+### 6、补充 OpenFeign 熔断
+
+由于 OpenFeign 内置 Hystrix 支持，OpenFeign 也可以开启熔断
+
+参考：https://blog.csdn.net/zzhuan_1/article/details/85839663
 
 ## 九、Zuul 路由网关
 
