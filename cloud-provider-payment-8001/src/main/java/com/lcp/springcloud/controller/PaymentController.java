@@ -3,7 +3,6 @@ package com.lcp.springcloud.controller;
 import com.lcp.springcloud.entities.CommonResult;
 import com.lcp.springcloud.entities.Payment;
 import com.lcp.springcloud.service.PaymentService;
-// import com.netflix.discovery.DiscoveryClient;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cloud.client.ServiceInstance;
@@ -13,6 +12,8 @@ import org.springframework.web.bind.annotation.*;
 import javax.annotation.Resource;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+// import com.netflix.discovery.DiscoveryClient;
 
 /**
  * @author lcp
@@ -81,6 +82,11 @@ public class PaymentController {
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
+        return serverPort;
+    }
+
+    @GetMapping("/lb")
+    public String getPaymentLb() {
         return serverPort;
     }
 }

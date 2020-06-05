@@ -145,11 +145,221 @@ Filter 在 "pre" 类型的过滤器可以做参数校验、权限校验、流量
 
 ## 入门配置
 
+### 新建 cloud-gateway-9527
 
+### pom.xml
+
+```xml
+<dependencies>
+    <!-- gateway -->
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-gateway</artifactId>
+    </dependency>
+
+    <!-- eureka-client -->
+    <dependency>
+        <groupId>org.springframework.cloud</groupId>
+        <artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+    </dependency>
+
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-devtools</artifactId>
+        <scope>runtime</scope>
+        <optional>true</optional>
+    </dependency>
+</dependencies>
+```
+
+#### 注意
+
+以下依赖禁止引入
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-web</artifactId>
+</dependency>
+```
+### application.yaml
+
+```yaml
+server:
+  port: 9527
+
+spring:
+  application:
+    name: cloud-gateway
+
+eureka:
+  client:
+    service-url:
+      #defaultZone: http://eureka7001.com:7001/eureka
+      defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka
+  instance:
+    # 自定义服务名称信息
+    instance-id: gateway-9527
+
+    # 心跳时间，即服务续约间隔时间（缺省为30s）
+    lease-renewal-interval-in-seconds: 1
+    # 发呆时间，即服务续约到期时间（缺省为90s）
+    lease-expiration-duration-in-seconds: 2
+    prefer-ip-address: true
+
+info:
+  app.name: spring-cloud-study-v2
+  company.name: www.lichangping.top
+  build.artifactId: $project.artifactId$
+  build.version: $project.version$
+```
+
+### YAML 添加网关映射
+
+映射 8001 的两个地址
+
+- /payment/get/**
+- /payment/lb/**
+
+```yaml
+spring:
+  application:
+    name: cloud-gateway
+  cloud:
+    gateway:
+      routes:
+        # 路由的id，没有固定规则但要求唯一，建议配合服务名
+        - id: payment_routh1
+          # 匹配后提供服务的路由地址
+          uri: http://localhost:8001
+          predicates:
+            # 断言，路径相匹配的进行路由
+            - Path=/payment/get/**
+
+        - id: payment_routh2
+          uri: http://localhost:8001
+          predicates:
+            - Path=/payment/lb/**
+```
+
+### GatewayApp9527.java
+
+```java
+@SpringBootApplication
+@EnableEurekaClient
+public class GatewayApp9527 {
+    public static void main(String[] args) {
+        SpringApplication.run(GatewayApp9527.class,args);
+    }
+}
+```
+
+### 测试
+
+1. 启动 7001，7002，9527，8001
+
+2. 访问
+
+   - http://192.168.1.10:8001/payment/get/1
+
+   - http://192.168.1.10:9527/payment/get/1
+
+   均能访问成功
+
+## 网关路由配置的两种方式
+
+### yaml 中配置
+
+见上面的步骤
+
+### 代码中注入 RouteLocator 的 Bean
+
+#### 官网案例
+
+The following example shows how to achieve the same configuration with Java:
+
+GatewayConfig.java
+
+```java
+RemoteAddressResolver resolver = XForwardedRemoteAddressResolver
+    .maxTrustedIndex(1);
+
+...
+
+.route("direct-route",
+    r -> r.remoteAddr("10.1.1.1", "10.10.1.1/24")
+        .uri("https://downstream1")
+.route("proxied-route",
+    r -> r.remoteAddr(resolver, "10.10.1.1", "10.10.1.1/24")
+        .uri("https://downstream2")
+)
+```
+
+#### 编写案例
+
+通过 9527 网关访问到百度的新闻网址：http://news.baidu.com/guonei
+
+##### GatewayConfig.java
+
+```java
+package com.lcp.springcloud.config;
+
+import org.springframework.cloud.gateway.route.RouteLocator;
+import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+/**
+ * @author lcp
+ * @date 2020/6/5 20:27
+ */
+@Configuration
+public class GatewayConfig {
+    /**
+     * 配置了一个 id 为 path_route_1 的路由规则，
+     * 当访问 http://192.168.1.10:9527/guonei 时会自动转发到地址 http://news.baidu.com/guonei
+     */
+    @Bean
+    public RouteLocator customRouteLocator(RouteLocatorBuilder routeLocatorBuilder) {
+        // RouteLocatorBuilder.Builder routes = routeLocatorBuilder.routes();
+        // routes.route("path_route_1",
+        //         predicateSpec -> predicateSpec.path("/guonei").uri("http://news.baidu.com/guonei")).build();
+        // return routes.build();
+
+        return routeLocatorBuilder
+                .routes()
+                .route("path_route_1",
+                        predicateSpec -> predicateSpec.path("/guonei")
+                                .uri("http://news.baidu.com/guonei"))
+                .build();
+    }
+}
+```
+
+##### 测试
+
+访问：http://192.168.1.10:9527/guonei
+
+![image-20200605211646848](10、Gateway 新一代路由网关.assets/image-20200605211646848.png)
 
 ## 通过微服务名实现动态路由
 
+默认情况下，Gateway 会根据注册中心注册的服务列表，以注册中心上的微服务名为路径创建`动态路由进行转发，从而实现动态路由的功能`。
 
+### YAML
+
+> 需要注意的是 uri 的协议 lb，表示启用 Gateway 的负载均衡功能
 
 ## Predicate的使用
 
