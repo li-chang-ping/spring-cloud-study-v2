@@ -449,7 +449,7 @@ Example 1. application.yml
 
 This route matches any request made after Jan 20, 2017 17:42 Mountain Time (Denver).
 
-**`After`** 路由谓词工厂使用一个参数，即datetime（这是一个Java ZonedDateTime）。该谓词匹配在指定日期时间之后发生的请求。上面的官方示例中，所有在 2017/01/20 17:42:47 之后的请求会被转发。
+> **`After`** 路由谓词工厂使用一个参数，即datetime（这是一个Java ZonedDateTime）。该谓词匹配在指定日期时间之后发生的请求。上面的官方示例中，所有在 2017/01/20 17:42:47 之后的请求会被转发。
 
 > - 技巧：时间可使用 `System.out.println(ZonedDateTime.now());` 打印，然后即可看到时区。例如：`2020-06-06T16:43:24.740+08:00[Asia/Shanghai]`
 > - 时间格式的相关逻辑：
@@ -477,7 +477,7 @@ spring:
 
 This route matches any request made before Jan 20, 2017 17:42 Mountain Time (Denver).
 
-**`Before`** 路由谓词工厂使用一个参数，即 datetime（这是一个Java ZonedDateTime）。该谓词匹配在指定日期时间之前发生的请求。上面的官方示例中，所有在 2017-01-20 17:42:47 之前的请求会被转发。
+> **`Before`** 路由谓词工厂使用一个参数，即 datetime（这是一个Java ZonedDateTime）。该谓词匹配在指定日期时间之前发生的请求。上面的官方示例中，所有在 2017-01-20 17:42:47 之前的请求会被转发。
 
 #### Between Route Predicate Factory
 
@@ -498,7 +498,7 @@ spring:
 
 This route matches any request made after Jan 20, 2017 17:42 Mountain Time (Denver) and before Jan 21, 2017 17:42 Mountain Time (Denver). This could be useful for maintenance windows.
 
-**`Between`** 路由谓词工厂使用两个参数 datetime1 和 datetime2，它们是 java ZonedDateTime 对象。该谓词匹配在 datetime1 之后和 datetime2 之前发生的请求。 datetime2 参数必须在 datetime1 之后。
+> **`Between`** 路由谓词工厂使用两个参数 datetime1 和 datetime2，它们是 java ZonedDateTime 对象。该谓词匹配在 datetime1 之后和 datetime2 之前发生的请求。 datetime2 参数必须在 datetime1 之后。
 
 #### Cookie Route Predicate Factory
 
@@ -519,7 +519,48 @@ spring:
 
 This route matches requests that have a cookie named `chocolate` whose value matches the `ch.p` regular expression.
 
-**`Cookie`** 路由谓词工厂使用两个参数，即 cookie 名称和一个 regexp（Java正则表达式）。该谓词匹配具有给定名称且其值与正则表达式匹配的cookie。
+> **`Cookie`** 路由谓词工厂使用两个参数，即 cookie 名称和一个 regexp（Java正则表达式）。该谓词匹配具有给定名称且其值与正则表达式匹配的 cookie。
+
+修改 9527 的 yaml
+
+```yaml
+- id: payment_routh2
+  uri: lb://cloud-provider-payment
+  predicates:
+    - Path=/payment/lb/**
+    - Cookie=username,lcp
+```
+
+测试
+
+不带 cookie，返回 404
+
+![image-20200606172632942](10、Gateway 新一代路由网关.assets/image-20200606172632942.png)
+
+带 cookie，返回正常结果
+
+![image-20200606172726694](10、Gateway 新一代路由网关.assets/image-20200606172726694.png)
+
+#### Header Route Predicate Factory
+
+The `Header` route predicate factory takes two parameters, the header `name` and a `regexp` (which is a Java regular expression). This predicate matches with a header that has the given name whose value matches the regular expression. The following example configures a header route predicate:
+
+Example 5. application.yml
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: header_route
+        uri: https://example.org
+        predicates:
+        - Header=X-Request-Id, \d+
+```
+
+This route matches if the request has a header named `X-Request-Id` whose value matches the `\d+` regular expression (that is, it has a value of one or more digits).
+
+> **`Header`** 路由谓词工厂使用两个参数，请求头名称和一个regexp（Java正则表达式）。该谓词匹配具有给定名称且其值与正则表达式匹配的 header。
 
 ## Filter的使用
 
