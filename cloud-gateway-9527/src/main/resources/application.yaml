@@ -25,7 +25,10 @@ spring:
           uri: lb://cloud-provider-payment
           predicates:
             - Path=/payment/lb/**
-            - After=2020-06-07T16:43:24.740+08:00[Asia/Shanghai]
+            #- After=2020-06-06T16:43:24.740+08:00[Asia/Shanghai]
+            #- After=2020-06-07T16:43:24.740+08:00[Asia/Shanghai]
+            #- Before=2020-06-06T16:43:24.740+08:00[Asia/Shanghai]
+            - Before=2020-06-06T18:43:24.740+08:00[Asia/Shanghai]
 
 
 
