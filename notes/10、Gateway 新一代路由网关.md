@@ -360,10 +360,166 @@ public class GatewayConfig {
 ### YAML
 
 > 需要注意的是 uri 的协议 lb，表示启用 Gateway 的负载均衡功能
+>
+> lb://serviceName 是 spring cloud gateway 在微服务中自动为我们创建的负载均衡 uri
+
+```yaml
+spring:
+  application:
+    name: cloud-gateway
+  cloud:
+    gateway:
+      # 开启从服务中心动态创建路由的功能，利用微服务名进行路由
+      discovery:
+        locator:
+          enabled: true
+      routes:
+        # 路由的id，没有固定规则但要求唯一，建议配合服务名
+        - id: payment_routh1
+          # 匹配后提供服务的路由地址
+          #uri: http://localhost:8001
+          uri: lb://cloud-provider-payment
+          predicates:
+            # 断言，路径相匹配的进行路由
+            - Path=/payment/get/**
+
+        - id: payment_routh2
+          #uri: http://localhost:8001
+          uri: lb://cloud-provider-payment
+          predicates:
+            - Path=/payment/lb/**
+```
+
+### 测试
+
+访问：http://localhost:9527/payment/lb，观察返回结果，可以发现 8001，8002 交替出现
 
 ## Predicate的使用
 
+### 是什么
 
+启动 9527，查看启动日志
+
+![image-20200606105115201](10、Gateway 新一代路由网关.assets/image-20200606105115201.png)
+
+### Route Predicate Factories
+
+https://cloud.spring.io/spring-cloud-gateway/2.2.x/reference/html/#gateway-request-predicates-factories
+
+![image-20200606111156591](10、Gateway 新一代路由网关.assets/image-20200606111156591.png)
+
+Spring Cloud Gateway 将路由匹配作为 Spring WebFlux HandlerMapping 基础架构的一部分。
+
+Spring Cloud Gateway 包括许多内置的 Route Predicate 工厂。所有这些 Predicate 都与 HTTP 请求的不同属性相匹配。多个 Route Predicate 工厂可以组合使用。
+
+Spring Cloud Gateway 创建 Route 对象时，使用 RoutePredicateFactory 创建 Predicate，Predicate 对象可以赋值给 Route。Spring Cloud Gateway 包含许多内置的 Route Predicate Factories。
+
+所有的谓词都匹配 HTTP 请求的不同属性。多种谓词工厂可以组合，并通过逻辑 and。
+
+### 常用的 Route Predicate
+
+所有不满足条件的请求均返回 404，满足的均会被路由
+
+![路由谓词工厂功能划分](10、Gateway 新一代路由网关.assets/20181125155612444.png)
+
+参考：https://blog.csdn.net/u012367513/article/details/86356708、https://blog.csdn.net/xuqiao2010585858/article/details/103342626
+
+IDEA 逆向
+
+![AbstractRoutePredicateFactory](10、Gateway 新一代路由网关.assets/AbstractRoutePredicateFactory.png)
+
+#### After Route Predicate Factory
+
+官方示例
+
+The `After` route predicate factory takes one parameter, a `datetime` (which is a java `ZonedDateTime`). This predicate matches requests that happen after the specified datetime. The following example configures an after route predicate:
+
+Example 1. application.yml
+
+ ```yaml
+ spring:
+   cloud:
+     gateway:
+       routes:
+       - id: after_route
+         uri: https://example.org
+         predicates:
+         - After=2017-01-20T17:42:47.789-07:00[America/Denver]
+ ```
+
+This route matches any request made after Jan 20, 2017 17:42 Mountain Time (Denver).
+
+**`After`** 路由谓词工厂使用一个参数，即datetime（这是一个Java ZonedDateTime）。该谓词匹配在指定日期时间之后发生的请求。上面的官方示例中，所有在 2017/01/20 17:42:47 之后的请求会被转发。
+
+> - 技巧：时间可使用 `System.out.println(ZonedDateTime.now());` 打印，然后即可看到时区。例如：`2020-06-06T16:43:24.740+08:00[Asia/Shanghai]`
+> - 时间格式的相关逻辑：
+>   - 默认时间格式：org.springframework.format.support.DefaultFormattingConversionService#addDefaultFormatters
+>   - 时间格式注册：org.springframework.format.datetime.standard.DateTimeFormatterRegistrar#registerFormatters
+
+#### Before Route Predicate Factory
+
+官方示例
+
+The `Before` route predicate factory takes one parameter, a `datetime` (which is a java `ZonedDateTime`). This predicate matches requests that happen before the specified `datetime`. The following example configures a before route predicate:
+
+Example 2. application.yml
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: before_route
+        uri: https://example.org
+        predicates:
+        - Before=2017-01-20T17:42:47.789-07:00[America/Denver]
+```
+
+This route matches any request made before Jan 20, 2017 17:42 Mountain Time (Denver).
+
+**`Before`** 路由谓词工厂使用一个参数，即 datetime（这是一个Java ZonedDateTime）。该谓词匹配在指定日期时间之前发生的请求。上面的官方示例中，所有在 2017-01-20 17:42:47 之前的请求会被转发。
+
+#### Between Route Predicate Factory
+
+The `Between` route predicate factory takes two parameters, `datetime1` and `datetime2` which are java `ZonedDateTime` objects. This predicate matches requests that happen after `datetime1` and before `datetime2`. The `datetime2` parameter must be after `datetime1`. The following example configures a between route predicate:
+
+Example 3. application.yml
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: between_route
+        uri: https://example.org
+        predicates:
+        - Between=2017-01-20T17:42:47.789-07:00[America/Denver], 2017-01-21T17:42:47.789-07:00[America/Denver]
+```
+
+This route matches any request made after Jan 20, 2017 17:42 Mountain Time (Denver) and before Jan 21, 2017 17:42 Mountain Time (Denver). This could be useful for maintenance windows.
+
+**`Between`** 路由谓词工厂使用两个参数 datetime1 和 datetime2，它们是 java ZonedDateTime 对象。该谓词匹配在 datetime1 之后和 datetime2 之前发生的请求。 datetime2 参数必须在 datetime1 之后。
+
+#### Cookie Route Predicate Factory
+
+The `Cookie` route predicate factory takes two parameters, the cookie `name` and a `regexp` (which is a Java regular expression). This predicate matches cookies that have the given name and whose values match the regular expression. The following example configures a cookie route predicate factory:
+
+Example 4. application.yml
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: cookie_route
+        uri: https://example.org
+        predicates:
+        - Cookie=chocolate, ch.p
+```
+
+This route matches requests that have a cookie named `chocolate` whose value matches the `ch.p` regular expression.
+
+**`Cookie`** 路由谓词工厂使用两个参数，即 cookie 名称和一个 regexp（Java正则表达式）。该谓词匹配具有给定名称且其值与正则表达式匹配的cookie。
 
 ## Filter的使用
 
