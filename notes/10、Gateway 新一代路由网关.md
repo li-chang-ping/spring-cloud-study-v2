@@ -521,7 +521,7 @@ This route matches requests that have a cookie named `chocolate` whose value mat
 
 > **`Cookie`** 路由谓词工厂使用两个参数，即 cookie 名称和一个 regexp（Java正则表达式）。该谓词匹配具有给定名称且其值与正则表达式匹配的 cookie。
 
-修改 9527 的 yaml
+##### 修改 9527 的 yaml
 
 ```yaml
 - id: payment_routh2
@@ -561,6 +561,26 @@ spring:
 This route matches if the request has a header named `X-Request-Id` whose value matches the `\d+` regular expression (that is, it has a value of one or more digits).
 
 > **`Header`** 路由谓词工厂使用两个参数，请求头名称和一个regexp（Java正则表达式）。该谓词匹配具有给定名称且其值与正则表达式匹配的 header。
+
+##### 修改 9527 的 yaml
+
+```yaml
+- id: payment_routh2
+  uri: lb://cloud-provider-payment
+  predicates:
+    - Path=/payment/lb/**
+    - Header=X-Request-Id,\d+  # 请求头要有 X-Request-Id 属性，并且值为整数
+```
+
+测试
+
+不带 header，返回 404
+
+![image-20200606191415076](10、Gateway 新一代路由网关.assets/image-20200606191415076.png)
+
+携带指定的 header，正常返回
+
+![image-20200606191502534](10、Gateway 新一代路由网关.assets/image-20200606191502534.png)
 
 ## Filter的使用
 
