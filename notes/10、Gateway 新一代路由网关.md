@@ -646,6 +646,28 @@ This route matches if the request method was a `GET` or a `POST`.
 
 > 方法路由谓词工厂使用方法参数，该参数是一个或多个参数：要匹配的HTTP方法。
 
+##### 修改 9527 的 yaml，8001、8002
+
+```yaml
+- id: payment_routh2
+  uri: lb://cloud-provider-payment
+  predicates:
+    - Path=/payment/lb/**
+    - Method=POST
+```
+
+将 8001、8002 的 `@GetMapping("/lb")` 改为 `@RequestMapping("/lb")`
+
+测试
+
+使用 Get(curl 默认 get) 访问，返回 404
+
+![image-20200606212451020](10、Gateway 新一代路由网关.assets/image-20200606212451020.png)
+
+使用 POST 访问，正常返回
+
+![image-20200606212546406](10、Gateway 新一代路由网关.assets/image-20200606212546406.png)
+
 #### Path Route Predicate Factory
 
 The `Path` Route Predicate Factory takes two parameters: a list of Spring `PathMatcher` `patterns` and an optional flag called `matchOptionalTrailingSeparator`. The following example configures a path route predicate:
@@ -715,6 +737,12 @@ The preceding route matches if the request contained a `red` query parameter who
 > **`Query`** 路由谓词工厂采用两个参数：必需的参数和可选的regexp（Java正则表达式）。
 >
 > 说白了就是匹配请求参数。
+
+##### 修改 9527 的 yaml
+
+```yaml
+
+```
 
 
 

@@ -33,7 +33,8 @@ spring:
             #- Between=2020-06-06T16:43:24.740+08:00[Asia/Shanghai],2020-06-07T16:43:24.740+08:00[Asia/Shanghai]
             #- Cookie=username,lcp
             #- Header=X-Request-Id,\d+  # 请求头要有 X-Request-Id 属性，并且值为整数
-            - Host=www.lcp.top
+            #- Host=www.lcp.top
+            - Method=POST
 
 
 
