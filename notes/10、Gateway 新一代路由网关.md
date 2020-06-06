@@ -430,8 +430,6 @@ IDEA 逆向
 
 #### After Route Predicate Factory
 
-官方示例
-
 The `After` route predicate factory takes one parameter, a `datetime` (which is a java `ZonedDateTime`). This predicate matches requests that happen after the specified datetime. The following example configures an after route predicate:
 
 Example 1. application.yml
@@ -581,6 +579,144 @@ This route matches if the request has a header named `X-Request-Id` whose value 
 携带指定的 header，正常返回
 
 ![image-20200606191502534](10、Gateway 新一代路由网关.assets/image-20200606191502534.png)
+
+#### Host Route Predicate Factory
+
+The `Host` route predicate factory takes one parameter: a list of host name `patterns`. The pattern is an Ant-style pattern with `.` as the separator. This predicates matches the `Host` header that matches the pattern. The following example configures a host route predicate:
+
+Example 6. application.yml
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: host_route
+        uri: https://example.org
+        predicates:
+        - Host=**.somehost.org,**.anotherhost.org
+```
+
+URI template variables (such as `{sub}.myhost.org`) are supported as well.
+
+This route matches if the request has a `Host` header with a value of `www.somehost.org` or `beta.somehost.org` or `www.anotherhost.org`.
+
+This predicate extracts the URI template variables (such as `sub`, defined in the preceding example) as a map of names and values and places it in the `ServerWebExchange.getAttributes()` with a key defined in `ServerWebExchangeUtils.URI_TEMPLATE_VARIABLES_ATTRIBUTE`. Those values are then available for use by [`GatewayFilter` factories](https://cloud.spring.io/spring-cloud-gateway/2.2.x/reference/html/#gateway-route-filters)
+
+> **`Host`** 路由谓词工厂使用一个参数：主机名模式列表。该模式是带有的Ant样式的模式 `.` 作为分隔符。该谓词匹配符合条件的 host。
+
+##### 修改 9527 的 yaml
+
+```yaml
+- id: payment_routh2
+  uri: lb://cloud-provider-payment
+  predicates:
+    - Path=/payment/lb/**
+    - Host=www.lcp.top
+```
+
+测试
+
+不带指定 host，返回 404
+
+![image-20200606193343140](10、Gateway 新一代路由网关.assets/image-20200606193343140.png)
+
+带指定 host，正常返回
+
+![image-20200606193510295](10、Gateway 新一代路由网关.assets/image-20200606193510295.png)
+
+#### Method Route Predicate Factory
+
+The `Method` Route Predicate Factory takes a `methods` argument which is one or more parameters: the HTTP methods to match. The following example configures a method route predicate:
+
+Example 7. application.yml
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: method_route
+        uri: https://example.org
+        predicates:
+        - Method=GET,POST
+```
+
+This route matches if the request method was a `GET` or a `POST`.
+
+> 方法路由谓词工厂使用方法参数，该参数是一个或多个参数：要匹配的HTTP方法。
+
+#### Path Route Predicate Factory
+
+The `Path` Route Predicate Factory takes two parameters: a list of Spring `PathMatcher` `patterns` and an optional flag called `matchOptionalTrailingSeparator`. The following example configures a path route predicate:
+
+Example 8. application.yml
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: path_route
+        uri: https://example.org
+        predicates:
+        - Path=/red/{segment},/blue/{segment}
+```
+
+This route matches if the request path was, for example: `/red/1` or `/red/blue` or `/blue/green`.
+
+This predicate extracts the URI template variables (such as `segment`, defined in the preceding example) as a map of names and values and places it in the `ServerWebExchange.getAttributes()` with a key defined in `ServerWebExchangeUtils.URI_TEMPLATE_VARIABLES_ATTRIBUTE`. Those values are then available for use by [`GatewayFilter` factories](https://cloud.spring.io/spring-cloud-gateway/2.2.x/reference/html/#gateway-route-filters)
+
+A utility method (called `get`) is available to make access to these variables easier. The following example shows how to use the `get` method:
+
+```java
+Map<String, String> uriVariables = ServerWebExchangeUtils.getPathPredicateVariables(exchange);
+String segment = uriVariables.get("segment");
+```
+
+> **`Path`** 路由谓词工厂使用两个参数：Spring PathMatcher 模式列表和一个称为matchOptionalTrailingSeparator的可选标志。
+
+例子见最开始的入门配置
+
+#### Query Route Predicate Factory
+
+The `Query` route predicate factory takes two parameters: a required `param` and an optional `regexp` (which is a Java regular expression). The following example configures a query route predicate:
+
+Example 9. application.yml
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: query_route
+        uri: https://example.org
+        predicates:
+        - Query=green
+```
+
+The preceding route matches if the request contained a `green` query parameter.
+
+application.yml
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: query_route
+        uri: https://example.org
+        predicates:
+        - Query=red, gree.
+```
+
+The preceding route matches if the request contained a `red` query parameter whose value matched the `gree.` regexp, so `green` and `greet` would match.
+
+> **`Query`** 路由谓词工厂采用两个参数：必需的参数和可选的regexp（Java正则表达式）。
+>
+> 说白了就是匹配请求参数。
+
+
 
 ## Filter的使用
 
