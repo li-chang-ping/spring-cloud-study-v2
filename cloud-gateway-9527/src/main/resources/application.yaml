@@ -37,6 +37,13 @@ spring:
             #- Method=POST
             - Query=abc
 
+        - id: payment_routh3
+          uri: http://localhost:8001
+          predicates:
+            - Path=/payment/addRequestParameter
+          filters:
+            - AddRequestParameter=abc,123
+
 
 
 eureka:

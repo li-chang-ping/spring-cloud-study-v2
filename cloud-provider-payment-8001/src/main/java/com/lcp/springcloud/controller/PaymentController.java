@@ -89,4 +89,9 @@ public class PaymentController {
     public String getPaymentLb() {
         return serverPort;
     }
+
+    @RequestMapping("/addRequestParameter")
+    public String addRequestParameter(String abc) {
+        return "abc:" + abc;
+    }
 }

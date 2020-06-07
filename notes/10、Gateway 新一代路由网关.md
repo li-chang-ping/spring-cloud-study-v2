@@ -870,8 +870,68 @@ Spring Cloud Gateway 内置了多种路由过滤器，他们都由 GatewayFilter
 
 #### AddRequestHeader GatewayFilter
 
+The Factory takes a and parameter. The following example configures an :`AddRequestParameter ` `GatewayFilter` `name` `value` `AddRequestParameter` `GatewayFilter`
 
+Example 15. application.yml
 
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: add_request_parameter_route
+        uri: https://example.org
+        filters:
+        - AddRequestParameter=red, blue
+```
 
+This will add to the downstream request’s query string for all matching requests.`red=blue`
+
+`AddRequestParameter` is aware of the URI variables used to match a path or host. URI variables may be used in the value and are expanded at runtime. The following example configures an that uses a variable:`AddRequestParameter` `GatewayFilter`
+
+Example 16. application.yml
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: add_request_parameter_route
+        uri: https://example.org
+        predicates:
+        - Host: {segment}.myhost.org
+        filters:
+        - AddRequestParameter=foo, bar-{segment}
+```
+
+##### 修改 9527 的 yaml，8001
+
+```yaml
+- id: payment_routh3
+uri: http://localhost:8001
+predicates:
+  - Path=/payment/addRequestParameter
+filters:
+  - AddRequestParameter=abc,123
+```
+
+8001 的 PaymentController
+
+```java
+@RequestMapping("/addRequestParameter")
+public String addRequestParameter(String abc) {
+    return "abc:" + abc;
+}
+```
+
+测试
+
+GET
+
+![image-20200607112513203](10、Gateway 新一代路由网关.assets/image-20200607112513203.png)
+
+POST
+
+![image-20200607112458947](10、Gateway 新一代路由网关.assets/image-20200607112458947.png)
 
 方志朋的博客：https://blog.csdn.net/forezp/article/details/85057268
