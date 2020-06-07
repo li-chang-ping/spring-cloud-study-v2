@@ -34,7 +34,8 @@ spring:
             #- Cookie=username,lcp
             #- Header=X-Request-Id,\d+  # 请求头要有 X-Request-Id 属性，并且值为整数
             #- Host=www.lcp.top
-            - Method=POST
+            #- Method=POST
+            - Query=abc
 
 
 

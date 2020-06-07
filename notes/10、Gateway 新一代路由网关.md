@@ -741,12 +741,137 @@ The preceding route matches if the request contained a `red` query parameter who
 ##### 修改 9527 的 yaml
 
 ```yaml
-
+- id: payment_routh2
+  uri: lb://cloud-provider-payment
+  predicates:
+    - Path=/payment/lb/**
+    - Query=abc
 ```
 
+测试
 
+不带参数访问，返回 404，结果图同上，不再贴出
+
+带参数访问，正常返回
+
+![image-20200606213024104](10、Gateway 新一代路由网关.assets/image-20200606213024104.png)
+
+#### RemoteAddr Route Predicate Factory
+
+The `RemoteAddr` route predicate factory takes a list (min size 1) of `sources`, which are CIDR-notation (IPv4 or IPv6) strings, such as `192.168.0.1/16` (where `192.168.0.1` is an IP address and `16` is a subnet mask). The following example configures a RemoteAddr route predicate:
+
+Example 10. application.yml
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: remoteaddr_route
+        uri: https://example.org
+        predicates:
+        - RemoteAddr=192.168.1.1/24
+```
+
+This route matches if the remote address of the request was, for example, `192.168.1.10`.
+
+> **`RemoteAddr`** 路由谓词工厂使用源列表（最小大小为1），这些源是CIDR标记（IPv4或IPv6）字符串，例如192.168.0.1/16（其中192.168.0.1是IP地址，而16是子网掩码）。
+
+>补充
+>
+>RemoteAddr Route Predicate Factory默认情况下，使用的是请求的remote address。但是如果Spring Cloud Gateway是部署在其他的代理后面的，如Nginx，则Spring Cloud Gateway获取请求的remote address是其他代理的ip，而不是真实客户端的ip。
+>
+>考虑到这种情况，你可以自定义获取remote address的处理器RemoteAddressResolver。当然Spring Cloud Gateway也提供了基于X-Forwarded-For请求头的XForwardedRemoteAddressResolver。
+>熟悉Http代理协议的，都知道X-Forwarded-For头信息做什么的，不熟悉的可以自己谷歌了解一下。
+>
+>XForwardedRemoteAddressResolver提供了两个静态方法获取它的实例：
+>XForwardedRemoteAddressResolver::trustAll得到的RemoteAddressResolver总是获取X-Forwarded-For的第一个ip地址作为remote address，这种方式就比较容易被伪装的请求欺骗，模拟请求很容易通过设置初始的X-Forwarded-For头信息，就可以欺骗到gateway。
+>
+>XForwardedRemoteAddressResolver::maxTrustedIndex得到的RemoteAddressResolver则会在X-Forwarded-For信息里面，从右到左选择信任最多maxTrustedIndex个ip，因为X-Forwarded-For是越往右是越接近gateway的代理机器ip，所以是越往右的ip，信任度是越高的。
+>那么如果前面只是挡了一层Nginx的话，如果只需要Nginx前面客户端的ip，则maxTrustedIndex取1，就可以比较安全地获取真实客户端ip。
+>————————————————
+>原文链接：https://blog.csdn.net/u012367513/article/details/86356708
+>
+>官网出处：https://cloud.spring.io/spring-cloud-gateway/2.2.x/reference/html/#modifying-the-way-remote-addresses-are-resolved
+
+#### Weight Route Predicate Factory
+
+The `Weight` route predicate factory takes two arguments: `group` and `weight` (an int). The weights are calculated per group. The following example configures a weight route predicate:
+
+Example 11. application.yml
+
+```yaml
+spring:
+  cloud:
+    gateway:
+      routes:
+      - id: weight_high
+        uri: https://weighthigh.org
+        predicates:
+        - Weight=group1, 8
+      - id: weight_low
+        uri: https://weightlow.org
+        predicates:
+        - Weight=group1, 2
+```
+
+This route would forward ~80% of traffic to [weighthigh.org](https://weighthigh.org/) and ~20% of traffic to [weighlow.org](https://weighlow.org/)
+
+> **`Weight`** 路由谓词工厂采用两个参数：group和weight（一个int）。
+>
+> 假设有 100 次请求，组里一个权重8，一个权重2，那么会有80次被转发到权重为8的路由去
+
+> 补充
+>
+> 权重算法实现过程
+>
+> https://www.cnblogs.com/liukaifeng/p/10055866.html
+
+### 总结
+
+说白了，Predicate 就是为了实现一组匹配规则，让请求过来找到对应的 Route 进行处理。
 
 ## Filter的使用
 
+### 是什么
+
+![image-20200607092814750](10、Gateway 新一代路由网关.assets/image-20200607092814750.png)
+
+路由过滤器可用于修改进入的 HTTP 请求和返回的 HTTP 响应，路由过滤器只能指定路由进行使用。
+
+Spring Cloud Gateway 内置了多种路由过滤器，他们都由 GatewayFilter 的工厂类来产生。
+
+### Spring Cloud Gateway 的 Filter
+
+#### 生命周期
+
+只有两种
+
+1. pre
+2. post
+
+客户端的请求先经过“pre”类型的filter，然后将请求转发到具体的业务服务，比如上图中的user-service，收到业务服务的响应之后，再经过“post”类型的filter处理，最后返回响应到客户端。
+
+#### 种类
+
+只有两种
+
+- GatewayFilter
+
+  目前官网有 31 种，用法与上面的 Predicate 类似，参照官网尝试即可
+
+- GlobalFilter
+
+  目前官网有 10 种
+
+在 Spring Cloud Gateway 中，filter 从作用范围可分为另外两种，一种是针对于单个路由的 GatewayFilter，它在配置文件中的写法同 predict 类似；另外一种是针对于所有路由的 GlobalFilter。
+
+### 常用的 GatewayFilter
+
+#### AddRequestHeader GatewayFilter
 
 
+
+
+
+方志朋的博客：https://blog.csdn.net/forezp/article/details/85057268
