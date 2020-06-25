@@ -7,10 +7,10 @@ spring:
     config:
       server:
         git:
-          uri: git@github.com:li-chang-ping/spring-cloud-study-config-v2.git
+          uri: git@gitee.com:li-chang-ping/spring-cloud-study-config-v2.git
           # 搜索目录
           clone-on-start: true
-          search-paths: '{application}'
+          searchPaths: '{application}'
       # 读取分支
       label: master
 
