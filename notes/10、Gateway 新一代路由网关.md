@@ -180,6 +180,11 @@ Filter 在 "pre" 类型的过滤器可以做参数校验、权限校验、流量
         <scope>runtime</scope>
         <optional>true</optional>
     </dependency>
+    
+    <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+        </dependency>
 </dependencies>
 ```
 
@@ -866,6 +871,8 @@ Spring Cloud Gateway 内置了多种路由过滤器，他们都由 GatewayFilter
 
 在 Spring Cloud Gateway 中，filter 从作用范围可分为另外两种，一种是针对于单个路由的 GatewayFilter，它在配置文件中的写法同 predict 类似；另外一种是针对于所有路由的 GlobalFilter。
 
+方志朋的博客：https://blog.csdn.net/forezp/article/details/85057268
+
 ### 常用的 GatewayFilter
 
 #### AddRequestHeader GatewayFilter
@@ -926,6 +933,8 @@ public String addRequestParameter(String abc) {
 
 测试
 
+启动 7001，7002，9527，8001
+
 GET
 
 ![image-20200607112513203](10、Gateway 新一代路由网关.assets/image-20200607112513203.png)
@@ -934,4 +943,60 @@ POST
 
 ![image-20200607112458947](10、Gateway 新一代路由网关.assets/image-20200607112458947.png)
 
-方志朋的博客：https://blog.csdn.net/forezp/article/details/85057268
+#### 省略
+
+阅读官方文档即可
+
+### 自定义过滤器
+
+#### 自定义全局过滤器 GlobalFilter 
+
+##### 要实现的两个主要接口
+
+`GlobalFilter`, `Ordered`
+
+##### 能实现的功能
+
+- 全局日志记录
+- 统一网关鉴权
+- ......
+
+##### 案例代码
+
+9527 新建 MyLogGatewayFilter
+
+```java
+@Component
+@Slf4j
+public class MyLogGatewayFilter implements GlobalFilter, Ordered {
+    @Override
+    public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
+        log.info("**********come in MyLogGatewayFilter:" + new Date());
+        String uname = exchange.getRequest().getQueryParams().getFirst("uname");
+        if (uname == null) {
+            log.info("**********用户名为null，非法用户，/(ㄒoㄒ)/~~");
+            exchange.getResponse().setStatusCode(HttpStatus.NOT_ACCEPTABLE);
+            return exchange.getResponse().setComplete();
+        }
+        return chain.filter(exchange);
+    }
+
+    @Override
+    public int getOrder() {
+        return 0;
+    }
+}
+```
+
+启动 7001，7002，9527，8001
+
+测试
+
+正确地址：http://localhost:9527/payment/lb?uname=123
+
+![image-20200607150129491](10、Gateway 新一代路由网关.assets/image-20200607150129491.png)
+
+错误地址：http://localhost:9527/payment/lb?uname111=123
+
+![image-20200607150224018](10、Gateway 新一代路由网关.assets/image-20200607150224018.png)
+

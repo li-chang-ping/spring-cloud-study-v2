@@ -35,7 +35,7 @@ spring:
             #- Header=X-Request-Id,\d+  # 请求头要有 X-Request-Id 属性，并且值为整数
             #- Host=www.lcp.top
             #- Method=POST
-            - Query=abc
+            #- Query=abc
 
         - id: payment_routh3
           uri: http://localhost:8001
