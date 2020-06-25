@@ -115,10 +115,9 @@ spring:
       server:
         git:
           uri: git@github.com:li-chang-ping/spring-cloud-study-config-v2.git
-          # 搜索目录
           clone-on-start: true
-      #          search-paths:
-      #            - springcloud-config
+          # 搜索目录
+          search-paths: '{application}'
       # 读取分支
       label: master
 
@@ -161,7 +160,7 @@ public class ConfigCenterApp3344 {
 
 浏览器访问：http://localhost:3344/master/config-test.yml
 
-#### 4、配置文件读取规则
+#### 配置文件读取规则
 
 查看官网：https://cloud.spring.io/spring-cloud-static/spring-cloud-config/2.2.2.RELEASE/reference/html/
 
@@ -191,14 +190,13 @@ The HTTP service has resources in the following form:
      - http://localhost:3344/master/application-test.yaml
      - http://localhost:3344/master/application-xxx.yaml
 
-label：分支
+`label：分支`
 
-application：服务名
+`application：服务名（配置文件名前缀）`
 
-profile：环境（dev/test/prod）
+`profile：环境（dev/test/prod）（配置文件名后缀）`
 
-> 注：config 客户端在没有 spring.cloud.config.name属性的时候，服务端{application} 获取的是客户端
-> spring.application.name的值，否则，获取的是 spring.cloud.config.name的值。
+> 注：config 客户端在没有 spring.cloud.config.name属性的时候，服务端{application} 获取的是客户端 spring.application.name的值，否则，获取的是 spring.cloud.config.name的值。
 > 1）、当没有spring.cloud.config.name时，客户端获取的是spring.application.name 所对应的git库中的文件，并且只能
 > 获取一个文件，
 > 2）、当一个项目中有需求要获取多个文件时，就需要用到spring.cloud.config.name这个属性，以逗号分割
@@ -220,7 +218,7 @@ profile：环境（dev/test/prod）
 
     <dependency>
         <groupId>org.springframework.cloud</groupId>
-        <artifactId>spring-cloud-config-server</artifactId>
+        <artifactId>spring-cloud-starter-config</artifactId>
     </dependency>
     <dependency>
         <groupId>org.springframework.cloud</groupId>
@@ -230,11 +228,11 @@ profile：环境（dev/test/prod）
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-web</artifactId>
     </dependency>
-
     <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
+
     <dependency>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-devtools</artifactId>
@@ -264,10 +262,82 @@ Spring Cloud会创建一个`Bootstrap Context`，作为 Spring 应用的`Applica
 ### bootstrap.yaml
 
 ```yaml
+server:
+  port: 3355
 
+spring:
+  application:
+    name: config-client
+  cloud:
+    config:
+      # 由于上面配置了 search-paths: '{application}',所以会去 config-client-3355 下找配置文件
+      name: config-client-3355
+      profile: dev
+      label: master
+      uri: http://localhost:3344
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://eureka7001.com:7001/eureka,http://eureka7002.com:7002/eureka
+  instance:
+    instance-id: config-client-3355
+
+    lease-renewal-interval-in-seconds: 1
+    lease-expiration-duration-in-seconds: 2
+    prefer-ip-address: true
 ```
 
+### ConfigClientApp3355
 
+```java
+@EnableEurekaClient
+@SpringBootApplication
+public class ConfigClientApp3355 {
+    public static void main(String[] args) {
+        SpringApplication.run(ConfigClientApp3355.class, args);
+    }
+}
+```
+
+### ConfigClientController
+
+```java
+@RestController
+//@RefreshScope
+public class ConfigClientController {
+    @Value("${config.info}")
+    private String configInfo;
+
+    @GetMapping("/configInfo")
+    public String getConfigInfo() {
+        System.out.println("111111");
+        return configInfo;
+    }
+}
+```
+
+### 测试
+
+启动 7001，7002，3344
+
+3344 启动成功
+
+![image-20200625173708288](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\11、Spring Cloud Config 分布式配置中心.assets\image-20200625173708288.png)
+
+访问：http://localhost:3355/configInfo
+
+![image-20200625173731872](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\11、Spring Cloud Config 分布式配置中心.assets\image-20200625173731872.png)
+
+说明读取远程配置文件成功
+
+### 测试 search-paths 有效性
+
+将最开始的配置文件夹 cloud-client-3355 改为 cloud-client-33，commit + push
+
+重启 3355，会发现启动失败，报错 `Could not resolve placeholder 'config.info' in value "${config.info}"`，说明没有读取到配置文件
+
+![image-20200625173330101](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\11、Spring Cloud Config 分布式配置中心.assets\image-20200625173330101.png)
 
 
 
@@ -279,3 +349,59 @@ Spring Cloud会创建一个`Bootstrap Context`，作为 Spring 应用的`Applica
 
 ## Search Paths(实现一个模块对应一个目录)
 
+官方文档：https://cloud.spring.io/spring-cloud-static/spring-cloud-config/2.2.2.RELEASE/reference/html/#_placeholders_in_git_search_paths
+
+![image-20200625171017693](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\11、Spring Cloud Config 分布式配置中心.assets\image-20200625171017693.png)
+
+注：
+
+config 客户端在没有 spring.cloud.config.name属性的时候，服务端{application} 获取的是客户端 spring.application.name的值，否则，获取的是 spring.cloud.config.name的值。
+
+1. 当没有spring.cloud.config.name时，客户端获取的是spring.application.name 所对应的git库中的文件，并且只能
+   获取一个文件，
+2. 当一个项目中有需求要获取多个文件时，就需要用到spring.cloud.config.name这个属性，以逗号分割
+
+> 详见 Config服务端配置与测试，Config客户端配置与测试
+
+### 优化
+
+上面使用的目录为 config-client-3355
+
+config-server 的 application.yaml 相关配置为
+
+```yaml
+server:
+  port: 3344
+spring:
+  application:
+    name: cloud-config-center
+  cloud:
+    config:
+      server:
+        git:
+          uri: git@github.com:li-chang-ping/spring-cloud-study-config-v2.git
+          clone-on-start: true
+          # 搜索目录
+          search-paths: '{application}'
+      # 读取分支
+      label: master
+```
+
+config-client-3355 的 bootstrap.yaml 相关配置为
+
+```yaml
+server:
+  port: 3355
+
+spring:
+  application:
+    name: config-client
+  cloud:
+    config:
+      name: config-client-3355
+      profile: dev
+      label: master
+      uri: http://localhost:3344
+```
+
+这样客户端启动后最终会获取到在 config-client-3355 文件夹下的 config-client-3355-dev.yaml 配置文件
