@@ -339,9 +339,79 @@ public class ConfigClientController {
 
 ![image-20200625173330101](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\11、Spring Cloud Config 分布式配置中心.assets\image-20200625173330101.png)
 
-
-
 ## Config 客户端之动态刷新
+
+上面的配置在以下场景中会存在一些问题
+
+- 运维修改 Github 上的配置文件内容做调整
+- 刷新 3344，发现 Config Server 能响应更改
+- 刷新 3355，发现 Config Client 不会响应更改，3355 需要重启才能加载新的配置文件
+- 每次修改配置文件都重启客户端？这是噩梦
+
+### 修改 3355 模块
+
+#### pom 引入 actuator 监控
+
+```xml
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+```
+
+#### 修改 YAML，暴露监控端口
+
+```yaml
+# 暴露监控端口
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*"
+```
+
+#### 修改 ConfigClientController
+
+添加 @RefreshScope
+
+```java
+@RestController
+@RefreshScope
+public class ConfigClientController {
+    @Value("${config.info}")
+    private String configInfo;
+
+    @GetMapping("/configInfo")
+    public String getConfigInfo() {
+        System.out.println("111111");
+        return configInfo;
+    }
+}
+```
+
+#### 此时修改远程仓库的配置
+
+启动 7001，7002，3344，3355
+
+修改 config-client-3355-dev.yaml，推送到远程仓库
+
+Gitee/GitHub --> 3344 --> 3355
+
+访问：http://localhost:3344/master/config-client-3355-dev.yaml，多次刷新，可以获得最新配置
+
+访问：http://localhost:3344/master/config-client-3355-dev.yaml，多次刷新，配置并无变化
+
+此时动态刷新任然不起作用
+
+#### 如何生效？
+
+手动发送 post 请求刷新 3355
+
+```powershell
+curl -X POST "http://localhost:3355/actuator/refresh"
+```
+
+访问：http://localhost:3344/master/config-client-3355-dev.yaml，发现 3355 获取了最新配置
 
 
 
@@ -405,3 +475,25 @@ spring:
 ```
 
 这样客户端启动后最终会获取到在 config-client-3355 文件夹下的 config-client-3355-dev.yaml 配置文件
+
+可以按下面的方式优化
+
+bootstrap.yaml
+
+```yaml
+server:
+  port: 3355
+
+spring:
+  application:
+    name: config-client
+  cloud:
+    config:
+      name: config-client
+      # 最终会获取到在 config-client 文件夹下的 config-client-3355-dev.yaml 配置文件
+      # 这时候 config-client 还可以放 3366，3377 的配置文件
+      profile: 3355-dev
+      label: master
+      uri: http://localhost:3344
+```
+
