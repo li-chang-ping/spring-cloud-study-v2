@@ -411,11 +411,11 @@ Gitee/GitHub --> 3344 --> 3355
 curl -X POST "http://localhost:3355/actuator/refresh"
 ```
 
-访问：http://localhost:3344/master/config-client-3355-dev.yaml，发现 3355 获取了最新配置
+访问：http://localhost:3344/master/config-client-3355-dev.yaml，发现 3355 获取了最新配置，避免了服务重启
 
+### 存在的问题
 
-
-
+假设有多个微服务，每个微服务都 post 一次，这仍然是不方便的，应寻求更大范围的自动刷新，一次通知，处处生效
 
 ## Search Paths(实现一个模块对应一个目录)
 
