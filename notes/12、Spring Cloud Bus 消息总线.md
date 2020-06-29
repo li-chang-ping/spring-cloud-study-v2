@@ -151,6 +151,12 @@ public class ConfigClientController {
 }
 ```
 
+#### 远程配置仓库 spring-cloud-study-config-v2
+
+![image-20200629091457208](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\12、Spring Cloud Bus 消息总线.assets\image-20200629091457208.png)
+
+
+
 ### 设计思想
 
 #### 方式一
@@ -172,6 +178,78 @@ public class ConfigClientController {
 - 打破了为微服务职责的单一性，因为微服务本身是业务模块，它本不应该承担配置刷新的职责
 - 破坏了微服务各节点的对等性
 - 有一定的局限性，例如：微服务在迁移时，它的网络地址会发生变化，此时如果想要做到自动刷新，需要增加许多额外的修改。
+
+### 给 3344 配置中心服务端添加消息总线支持
+
+#### pom.xml
+
+```xml
+<!--添加消息总线RabbitMQ支持-->
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-bus-amqp</artifactId>
+</dependency>
+```
+
+#### YML
+
+```yaml
+spring:    
+  rabbitmq:
+      host: localhost
+      port: 5672
+      username: guest
+      password: guest
+    
+management:
+  endpoints:
+    web:
+      exposure:
+        include: 'bus-refresh'
+```
+
+### 给 3355/3366 客户端添加消息总线支持
+
+#### pom.xml
+
+```xml
+<!--添加消息总线RabbitMQ支持-->
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-bus-amqp</artifactId>
+</dependency>
+```
+
+#### YML
+
+```yaml
+spring:    
+  rabbitmq:
+      host: localhost
+      port: 5672
+      username: guest
+      password: guest
+    
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+```
+
+### 测试
+
+启动 7001，7002， 3344，3355，3366
+
+rabbitmq 连接状态
+
+![image-20200629095608572](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\12、Spring Cloud Bus 消息总线.assets\image-20200629095608572.png)
+
+#### 修改配置文件并推送
+
+修改 config-client-3366-dev.yml，version = 1 改为 version = 123456
+
+修改 config-client-3355-dev.yaml，version = 11 改为 version = 555555
 
 ## Spring Cloud Bus 动态刷新定点广播通知
 

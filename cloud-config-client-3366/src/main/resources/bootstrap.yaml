@@ -12,6 +12,12 @@ spring:
       profile: 3366-dev
       label: master
       uri: http://localhost:3344
+  rabbitmq:
+    host: 172.29.7.84
+#    host: localhost
+    port: 5672
+    username: guest
+    password: guest
 
 eureka:
   client:
