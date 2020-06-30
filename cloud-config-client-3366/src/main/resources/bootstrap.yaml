@@ -3,7 +3,7 @@ server:
 
 spring:
   application:
-    name: config-client-3355
+    name: config-client
   profiles:
     active:
   cloud:
