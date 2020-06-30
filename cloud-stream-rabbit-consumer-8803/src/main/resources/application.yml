@@ -15,6 +15,7 @@ spring:
         input: # 这个名字是一个通道的名称，因为是消费者，所以是 input
           destination: studyExchange # 表示要使用的Exchange名称定义
           content-type: application/json # 设置消息类型，本次为json，文本则设置“text/plain”
+          group: consumerB
 
 eureka:
   client:

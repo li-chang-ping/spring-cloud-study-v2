@@ -491,3 +491,69 @@ eureka:
 ```
 
 经过测试，依然可以正常使用
+
+## 分组消费
+
+在上面的基础上启动 8803，访问一次：http://localhost:8801/sendMessage，结果发现 8802，8803 都收到了同一条消息，一条消息被消费了两次，存在重复消费情况。
+
+![image-20200630210805546](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630210805546.png)
+
+![image-20200630210827237](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630210827237.png)
+
+### 解决：分组 group
+
+比如在如下场景中，订单系统做了集群部署，都会从 RabbitMQ 中获取订单信息，如果一个订单同时被两个服务获取到，就会造成数据错误，这种情况必须避免，可以使用 Stream 中的消息分组来解决。
+
+![重复消费生产案例](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\重复消费生产案例.jpg)
+
+> 注意：在 Stream 中处于同一个 group 中的多个消费者是竞争关系，能够保证消息只会被其中一个应用消费一次。
+>
+> 不同组是可以全面消费的（重复消费）。
+>
+> 同一个组内会发生竞争，只有其中一个可以消费。
+
+
+
+### 8802，8803 分两组
+
+8802，8803 默认情况下就是各为一组，通过 rabbit mq 的管理页面可以看出
+
+![image-20200630213020015](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630213020015.png)
+
+自定义两各分组
+
+group：consumerA，consumerB
+
+#### 8802 修改YML
+
+input 下添加属性 group 和其值
+
+```yaml
+input: # 这个名字是一个通道的名称，因为是消费者，所以是 input
+  destination: studyExchange # 表示要使用的Exchange名称定义
+  content-type: application/json # 设置消息类型，本次为json，文本则设置“text/plain”
+  group: consumerA
+```
+
+#### 8803 修改YML
+
+input 下添加属性 group 和其值
+
+```yaml
+input: # 这个名字是一个通道的名称，因为是消费者，所以是 input
+  destination: studyExchange # 表示要使用的Exchange名称定义
+  content-type: application/json # 设置消息类型，本次为json，文本则设置“text/plain”
+  group: consumerB
+```
+
+#### 查看 Rabbit MQ
+
+![image-20200630214912111](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630214912111.png)
+
+自定义分组生效
+
+依然是重复消费
+
+### 8802，8803 同一组
+
+将 8802，8803 的 group 都修改为 consumerA
