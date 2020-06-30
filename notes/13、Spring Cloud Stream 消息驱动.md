@@ -550,10 +550,24 @@ input: # 这个名字是一个通道的名称，因为是消费者，所以是 i
 
 ![image-20200630214912111](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630214912111.png)
 
-自定义分组生效
-
-依然是重复消费
+**自定义分组生效，依然是重复消费**
 
 ### 8802，8803 同一组
 
 将 8802，8803 的 group 都修改为 consumerA
+
+发送 9 次
+
+#### 8801
+
+![image-20200630220315249](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630220315249.png)
+
+#### 8802
+
+![image-20200630220459562](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630220459562.png)
+
+#### 8803
+
+![image-20200630220407483](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630220407483.png)
+
+**可以发现，此时并无重复消费现象**
