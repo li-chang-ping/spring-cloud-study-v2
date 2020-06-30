@@ -301,7 +301,7 @@ http://localhost:配置中心的端口号/actuator/bus-refresh/{destination}
 
 刷新 3355，只通知 3355，不通知 3366
 
-1. 修改 3355，3366 配置
+1. 修改 3355，3366 配置并推送
 
 2. 访问：http://localhost:3366/configInfo，http://localhost:3355/configInfo
 
@@ -313,3 +313,6 @@ http://localhost:配置中心的端口号/actuator/bus-refresh/{destination}
 
 4. 刷新：http://localhost:3366/configInfo，http://localhost:3355/configInfo，可以发现 3355 配置已经更改，而 3366 并无变化
 
+## 总结
+
+![image-20200630100050776](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\12、Spring Cloud Bus 消息总线.assets\image-20200630100050776.png)
