@@ -1,5 +1,7 @@
 # Spring Cloud Bus 消息总线
 
+官方文档：https://cloud.spring.io/spring-cloud-bus/2.2.x/reference/html/#quick-start
+
 ## 概述
 
 ### Spring Cloud Config 的加深与扩充
@@ -241,6 +243,8 @@ management:
 
 启动 7001，7002， 3344，3355，3366
 
+访问：http://localhost:3366/configInfo，http://localhost:3355/configInfo
+
 rabbitmq 连接状态
 
 ![image-20200629095608572](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\12、Spring Cloud Bus 消息总线.assets\image-20200629095608572.png)
@@ -251,5 +255,61 @@ rabbitmq 连接状态
 
 修改 config-client-3355-dev.yaml，version = 11 改为 version = 555555
 
+#### 发送 POST 请求
+
+```shell
+curl -X POST "http://localhost:3344/actuator/bus-refresh"
+```
+
+刷新 http://localhost:3366/configInfo，http://localhost:3355/configInfo，会发现配置均已发生变化
+
 ## Spring Cloud Bus 动态刷新定点广播通知
+
+假设现在只修改了 3355 的配置，那么此时应该定点通知而不是全部通知
+
+### 简而言之
+
+指定具体某一个实例生效而不是全部
+
+公式：
+
+```java
+http://localhost:配置中心的端口号/actuator/bus-refresh/{destination}
+```
+
+通过 destination 参数指定需要更新配置的服务或实例
+
+### destination
+
+##### 通知一个服务的指定实例
+
+格式：`服务名:实例的端口号` 即 `spring.application.name:server.port`
+
+```
+/bus-refresh/customers:9000
+```
+
+##### 通知一个服务的所有实例
+
+格式：`服务名:**` 即 ``spring.application.name:**`
+
+```
+/bus-refresh/customers:**
+```
+
+### 案例
+
+刷新 3355，只通知 3355，不通知 3366
+
+1. 修改 3355，3366 配置
+
+2. 访问：http://localhost:3366/configInfo，http://localhost:3355/configInfo
+
+3. 发送 POST 请求
+
+   ```shell
+   curl -X POST "http://localhost:3344/actuator/bus-refresh/config-client:3355"
+   ```
+
+4. 刷新：http://localhost:3366/configInfo，http://localhost:3355/configInfo，可以发现 3355 配置已经更改，而 3366 并无变化
 

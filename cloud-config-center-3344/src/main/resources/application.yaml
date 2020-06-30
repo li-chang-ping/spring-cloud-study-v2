@@ -17,8 +17,7 @@ spring:
       label: master
 
   rabbitmq:
-    host: 172.29.7.84
-#    host: localhost
+    host: localhost
     port: 5672
     username: guest
     password: guest
