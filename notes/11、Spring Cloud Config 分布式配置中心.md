@@ -48,7 +48,7 @@ Spring Cloud 分为服务端与客户端两部分。
 
 3. 上传配置文件
 
-![image-20200625163557159](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\11、Spring Cloud Config 分布式配置中心.assets\image-20200625163557159.png)
+![image-20200625163557159](11、Spring Cloud Config 分布式配置中心.assets\image-20200625163557159.png)
 
 ### cloud-config-center-3344
 
@@ -323,11 +323,11 @@ public class ConfigClientController {
 
 3344 启动成功
 
-![image-20200625173708288](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\11、Spring Cloud Config 分布式配置中心.assets\image-20200625173708288.png)
+![image-20200625173708288](11、Spring Cloud Config 分布式配置中心.assets\image-20200625173708288.png)
 
 访问：http://localhost:3355/configInfo
 
-![image-20200625173731872](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\11、Spring Cloud Config 分布式配置中心.assets\image-20200625173731872.png)
+![image-20200625173731872](11、Spring Cloud Config 分布式配置中心.assets\image-20200625173731872.png)
 
 说明读取远程配置文件成功
 
@@ -337,7 +337,7 @@ public class ConfigClientController {
 
 重启 3355，会发现启动失败，报错 `Could not resolve placeholder 'config.info' in value "${config.info}"`，说明没有读取到配置文件
 
-![image-20200625173330101](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\11、Spring Cloud Config 分布式配置中心.assets\image-20200625173330101.png)
+![image-20200625173330101](11、Spring Cloud Config 分布式配置中心.assets\image-20200625173330101.png)
 
 ## Config 客户端之动态刷新
 
@@ -421,7 +421,7 @@ curl -X POST "http://localhost:3355/actuator/refresh"
 
 官方文档：https://cloud.spring.io/spring-cloud-static/spring-cloud-config/2.2.2.RELEASE/reference/html/#_placeholders_in_git_search_paths
 
-![image-20200625171017693](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\11、Spring Cloud Config 分布式配置中心.assets\image-20200625171017693.png)
+![image-20200625171017693](11、Spring Cloud Config 分布式配置中心.assets\image-20200625171017693.png)
 
 注：
 

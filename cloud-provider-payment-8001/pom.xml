@@ -12,6 +12,12 @@
     <artifactId>cloud-provider-payment-8001</artifactId>
 
     <dependencies>
+        <!-- 链路追踪，包含Sleuth + zipkin -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-zipkin</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.lcp.springcloud</groupId>
             <artifactId>cloud-api-commons</artifactId>

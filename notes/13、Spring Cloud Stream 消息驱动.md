@@ -33,7 +33,7 @@ Spring Cloud Stream 为一些消息中间件产品提供了个性化的自动化
 
 #### 标准 MQ
 
-![image-20200630110713567](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630110713567.png)
+![image-20200630110713567](13、Spring Cloud Stream 消息驱动.assets\image-20200630110713567.png)
 
 生产者/消费者之间靠消息媒介传递消息内容
 
@@ -53,7 +53,7 @@ Spring Cloud Stream 为一些消息中间件产品提供了个性化的自动化
 
 这些中间件的差异性会给实际项目开发造成一定困扰，我们如果用了两个消息队列的一种，后面的业务需求如果要迁往另外一种消息队列，需要推倒重做很多东西，因为这些消息中间件与系统耦合，Spring Cloud Stream 可以帮助我们解耦。
 
-![image-20200630112616166](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630112616166.png)
+![image-20200630112616166](13、Spring Cloud Stream 消息驱动.assets\image-20200630112616166.png)
 
 #### Stream 可以统一底层差异的原因 Binder
 
@@ -80,9 +80,9 @@ Topic 主题进行广播
 
 ### Spring Cloud Stream 标准流程套路
 
-![Binder](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\Binder.jpeg)
+![Binder](13、Spring Cloud Stream 消息驱动.assets\Binder.jpeg)
 
-![生产者消费者](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\生产者消费者.jpeg)
+![生产者消费者](13、Spring Cloud Stream 消息驱动.assets\生产者消费者.jpeg)
 
 #### Binder
 
@@ -98,7 +98,7 @@ Topic 主题进行广播
 
 ### 编码 API 和常用注解
 
-![编码API和常用注解](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\编码API和常用注解.jpeg)
+![编码API和常用注解](13、Spring Cloud Stream 消息驱动.assets\编码API和常用注解.jpeg)
 
 ## 案例说明
 
@@ -270,13 +270,13 @@ public class SendMessageController {
 
 访问：http://localhost:8801/sendMessage
 
-![image-20200630170831870](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630170831870.png)
+![image-20200630170831870](13、Spring Cloud Stream 消息驱动.assets\image-20200630170831870.png)
 
-![image-20200630171749882](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630171749882.png)
+![image-20200630171749882](13、Spring Cloud Stream 消息驱动.assets\image-20200630171749882.png)
 
 多次快速刷新：http://localhost:8801/sendMessage
 
-![image-20200630171859461](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630171859461.png)
+![image-20200630171859461](13、Spring Cloud Stream 消息驱动.assets\image-20200630171859461.png)
 
 ## 消息驱动-消费者
 
@@ -416,11 +416,11 @@ public class ReceiveMessageListenerController {
 
 查看 rabbitmq 的管理界面，会发现此时有一个队列绑定到了 studyExchange 上。
 
-![image-20200630201241925](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630201241925.png)
+![image-20200630201241925](13、Spring Cloud Stream 消息驱动.assets\image-20200630201241925.png)
 
 测试 8801 发送，8802 接收，访问：http://localhost:8801/sendMessage
 
-![image-20200630201451356](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630201451356.png)
+![image-20200630201451356](13、Spring Cloud Stream 消息驱动.assets\image-20200630201451356.png)
 
 ## 简化配置
 
@@ -496,15 +496,15 @@ eureka:
 
 在上面的基础上启动 8803，访问一次：http://localhost:8801/sendMessage，结果发现 8802，8803 都收到了同一条消息，一条消息被消费了两次，存在重复消费情况。
 
-![image-20200630210805546](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630210805546.png)
+![image-20200630210805546](13、Spring Cloud Stream 消息驱动.assets\image-20200630210805546.png)
 
-![image-20200630210827237](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630210827237.png)
+![image-20200630210827237](13、Spring Cloud Stream 消息驱动.assets\image-20200630210827237.png)
 
 ### 解决：分组 group
 
 比如在如下场景中，订单系统做了集群部署，都会从 RabbitMQ 中获取订单信息，如果一个订单同时被两个服务获取到，就会造成数据错误，这种情况必须避免，可以使用 Stream 中的消息分组来解决。
 
-![重复消费生产案例](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\重复消费生产案例.jpg)
+![重复消费生产案例](13、Spring Cloud Stream 消息驱动.assets\重复消费生产案例.jpg)
 
 > 注意：在 Stream 中处于同一个 group 中的多个消费者是竞争关系，能够保证消息只会被其中一个应用消费一次。
 >
@@ -518,7 +518,7 @@ eureka:
 
 8802，8803 默认情况下就是各为一组，通过 rabbit mq 的管理页面可以看出
 
-![image-20200630213020015](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630213020015.png)
+![image-20200630213020015](13、Spring Cloud Stream 消息驱动.assets\image-20200630213020015.png)
 
 自定义两各分组
 
@@ -548,7 +548,7 @@ input: # 这个名字是一个通道的名称，因为是消费者，所以是 i
 
 #### 查看 Rabbit MQ
 
-![image-20200630214912111](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630214912111.png)
+![image-20200630214912111](13、Spring Cloud Stream 消息驱动.assets\image-20200630214912111.png)
 
 **自定义分组生效，依然是重复消费**
 
@@ -560,15 +560,15 @@ input: # 这个名字是一个通道的名称，因为是消费者，所以是 i
 
 #### 8801
 
-![image-20200630220315249](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630220315249.png)
+![image-20200630220315249](13、Spring Cloud Stream 消息驱动.assets\image-20200630220315249.png)
 
 #### 8802
 
-![image-20200630220459562](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630220459562.png)
+![image-20200630220459562](13、Spring Cloud Stream 消息驱动.assets\image-20200630220459562.png)
 
 #### 8803
 
-![image-20200630220407483](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\13、Spring Cloud Stream 消息驱动.assets\image-20200630220407483.png)
+![image-20200630220407483](13、Spring Cloud Stream 消息驱动.assets\image-20200630220407483.png)
 
 **可以发现，此时并无重复消费现象**
 

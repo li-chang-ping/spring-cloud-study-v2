@@ -11,13 +11,13 @@
 
 ### 是什么
 
-![Bus+Config](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\12、Spring Cloud Bus 消息总线.assets\Bus+Config.jpeg)
+![Bus+Config](12、Spring Cloud Bus 消息总线.assets\Bus+Config.jpeg)
 
 Bus 支持两种消息代理：Rabbit MQ 和 Kafka
 
 ### 能干什么
 
-![bus](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\12、Spring Cloud Bus 消息总线.assets\bus.jpeg)
+![bus](12、Spring Cloud Bus 消息总线.assets\bus.jpeg)
 
 ### 为什么被称为总线
 
@@ -155,7 +155,7 @@ public class ConfigClientController {
 
 #### 远程配置仓库 spring-cloud-study-config-v2
 
-![image-20200629091457208](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\12、Spring Cloud Bus 消息总线.assets\image-20200629091457208.png)
+![image-20200629091457208](12、Spring Cloud Bus 消息总线.assets\image-20200629091457208.png)
 
 
 
@@ -165,13 +165,13 @@ public class ConfigClientController {
 
 利用消息总线触发一个客户端 /bus/refresh，而刷新所有客户端的配置（不推荐）
 
-![bus 方式一](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\12、Spring Cloud Bus 消息总线.assets\bus 方式一.jpg)
+![bus 方式一](12、Spring Cloud Bus 消息总线.assets\bus 方式一.jpg)
 
 #### 方式二
 
 利用消息总线触发一个服务端 ConfigServer 的 `/bus/refresh` 端点，而刷新所有客户端的配置（推荐）
 
-![bus 方式二](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\12、Spring Cloud Bus 消息总线.assets\bus 方式二.jpg)
+![bus 方式二](12、Spring Cloud Bus 消息总线.assets\bus 方式二.jpg)
 
 #### 分析
 
@@ -247,7 +247,7 @@ management:
 
 rabbitmq 连接状态
 
-![image-20200629095608572](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\12、Spring Cloud Bus 消息总线.assets\image-20200629095608572.png)
+![image-20200629095608572](12、Spring Cloud Bus 消息总线.assets\image-20200629095608572.png)
 
 #### 修改配置文件并推送
 
@@ -315,4 +315,4 @@ http://localhost:配置中心的端口号/actuator/bus-refresh/{destination}
 
 ## 总结
 
-![image-20200630100050776](E:\Developer\Java\IDEA\Practices\spring-cloud-study-v2\notes\12、Spring Cloud Bus 消息总线.assets\image-20200630100050776.png)
+![image-20200630100050776](12、Spring Cloud Bus 消息总线.assets\image-20200630100050776.png)
