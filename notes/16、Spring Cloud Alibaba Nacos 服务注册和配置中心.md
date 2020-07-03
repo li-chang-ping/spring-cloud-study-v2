@@ -22,7 +22,7 @@
 
 Nacos = Eureka + Config + Bus
 
-### 各注册中心比较
+## 各注册中心比较
 
 | 服务注册与发现框架 | CAP模型 | 控制台管理 | 社区活跃度        |
 | ------------------ | ------- | ---------- | ----------------- |
@@ -30,6 +30,25 @@ Nacos = Eureka + Config + Bus
 | Zookeeper          | CP      | 不支持     | 中                |
 | Consul             | CP      | 支持       | 高                |
 | Nacos              | AP      | 支持       | 高                |
+
+> Nacos 可以切换 AP 或 CP
+
+|                 | Nacos                          | Eureka      | Consul               | CoreDNS | Zookeeper   |
+| --------------- | ------------------------------ | ----------- | -------------------- | ------- | ----------- |
+| 一致性协议      | CP+AP                          | AP          | CP                   | /       | CP          |
+| 健康检查        | TCP/HTTP<br/>MySQL/Client Beat | Client Beat | TCP/HTTP<br>gRPC/Cmd | /       | Client Beat |
+| 负载均衡        | 权重/DSL<br/>metadata/CMDB     | Ribbon      | Fabio                | RR      | /           |
+| 雪崩保护        | 支持                           | 支持        | 不支持               | 不支持  | 不支持      |
+| 自动注销实例    | 支持                           | 支持        | 不支持               | 不支持  | 支持        |
+| 访问协议        | HTTP/DNS/UDP                   | HTTP        | HTTP/DNS             | DNS     | TCP         |
+| 监听支持        | 支持                           | 支持        | 支持                 | 不支持  | 支持        |
+| 多数据中心      | 支持                           | 支持        | 支持                 | 不支持  | 不支持      |
+| 跨注册中心      | 支持                           | 不支持      | 支持                 | 不支持  | 不支持      |
+| SpringCloud集成 | 支持                           | 支持        | 支持                 | 不支持  | 不支持      |
+| Dubbo           | 支持                           | 不支持      | 不支持               | 不支持  | 支持        |
+| k8s             | 支持                           | 不支持      | 支持                 | 支持    | 不支持      |
+
+![PotPlayerMini64_L8kaH2fMJE](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/PotPlayerMini64_L8kaH2fMJE.png)
 
 ## 安装并运行 Nacos
 
@@ -46,6 +65,8 @@ Nacos = Eureka + Config + Bus
    ```shell
    docker run --name nacos-standalone -e MODE=standalone -p 8848:8848 -d nacos/nacos-server:latest
    ```
+   
+   
 
 运行成功后直接访问：http://localhost:8848/nacos，默认账号密码都是  nacos 
 
@@ -217,8 +238,8 @@ nacos-server 启动是前提，启动 9001
         <groupId>com.alibaba.cloud</groupId>
         <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
     </dependency>
-        <dependency>
-        <groupId>com.atguigu.springcloud</groupId>
+    <dependency>
+        <groupId>com.lcp.springcloud</groupId>
         <artifactId>cloud-api-commons</artifactId>
         <version>${project.version}</version>
     </dependency>
@@ -249,8 +270,116 @@ nacos-server 启动是前提，启动 9001
 </dependencies>
 ```
 
+##### nacos 支持负载均衡的原因
 
+spring-cloud-starter-alibaba-nacos-discovery 引入了 ribbon 的依赖
 
+![idea64_wfn8mmmNbc](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/idea64_wfn8mmmNbc.png)
 
+#### YML
+
+```yaml
+server:
+  port: 83
+
+spring:
+  application:
+    name: nacos-order-consumer
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+        
+#消费者将要去访问的微服务名称(注册成功进nacos的微服务提供者)
+service-url:
+  nacos-user-service: http://nacos-payment-provider
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: '*'
+```
+
+#### 主启动类
+
+```java
+@SpringBootApplication
+@EnableDiscoveryClient
+public class NacosConsumerApp83 {
+    public static void main(String[] args) {
+        SpringApplication.run(NacosConsumerApp83.class, args);
+    }
+}
+```
+
+#### OrderNacosController
+
+```java
+@RestController
+public class OrderNacosController {
+    @Resource
+    private RestTemplate restTemplate;
+
+    @Value("${service-url.nacos-user-service}")
+    private String serverURL;
+
+    @GetMapping(value = "/consumer/payment/nacos/{id}")
+    public String paymentInfo(@PathVariable("id") Long id)
+    {
+        return restTemplate.getForObject(serverURL+"/payment/nacos/"+id,String.class);
+    }
+}
+```
+
+#### ApplicationContextConfig
+
+@LoadBalanced 启用负载均衡，此处必须启用，因为 controller 中不是靠 ip 直接请求 9001
+
+```java
+@Configuration
+public class ApplicationContextConfig {
+    @Bean
+    @LoadBalanced
+    public RestTemplate getRestTemplate() {
+        return new RestTemplate();
+    }
+}
+```
+
+#### 测试
+
+前提：nacos server，9001，9002，9003 已经启动
+
+启动 83
+
+访问：http://localhost:83/consumer/payment/nacos/1
+
+多次刷新，会发现以轮询的方式进行了负载均衡
 
 ## Nacos 作为服务配置中心
+
+
+
+
+
+
+
+## Nacos AP和CP切换
+
+`C`：所有节点在同一时间看到的数据是一致的
+
+`A`：所有的请求都会收到响应
+
+### 如何选择使用何种模式
+
+不需要存储服务级别的信息且服务实例是通过 nacos-client 注册，并且能够保持心跳上报，那么就可以选择 AP 模式。当前主流的服务如 Spring Cloud 和 Dubbo 服务，都适用于 AP，而 AP 为了服务的可能性而减弱了一致性，因此 AP 模式下只支持注册临时实例。
+
+如果需要需要在服务级别编辑或者配置存储信息，那么 CP 是必须的，K8S 服务和 DNS 服务 则适用于 CP 模式。
+
+CP 模式下支持注册持久化实例，此时则是以 Raft 协议为集群模式，该模式下，注册实例之前必须先注册服务，如果服务不存在，就会返回错误。
+
+```shell
+curl -X PUT '$NACOS_SERVER:8848/nacos/v1/ns/operator/switches?entry=serverMode&value=CP'
+```
+

@@ -31,6 +31,8 @@
         <module>cloud-stream-rabbit-provider-8801</module>
         <module>cloud-stream-rabbit-consumer-8802</module>
         <module>cloud-stream-rabbit-consumer-8803</module>
+        <module>cloud-alibaba-provider-payment-9001</module>
+        <module>cloud-alibaba-consumer-nacos-83</module>
     </modules>
     <packaging>pom</packaging>
 
@@ -114,6 +116,13 @@
                     <fork>true</fork>
                     <addResources>true</addResources>
                 </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
