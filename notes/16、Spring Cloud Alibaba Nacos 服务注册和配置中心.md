@@ -359,11 +359,314 @@ public class ApplicationContextConfig {
 
 ## Nacos 作为服务配置中心
 
+### 新建 83 模块
+
+新建 cloud-alibaba-config-client-3377
+
+#### POM
+
+```xml
+<dependencies>
+    <!--nacos-config-->
+    <dependency>
+        <groupId>com.alibaba.cloud</groupId>
+        <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+    </dependency>
+    <!--nacos-discovery-->
+    <dependency>
+        <groupId>com.alibaba.cloud</groupId>
+        <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+    </dependency>
+    <!--web + actuator-->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-actuator</artifactId>
+    </dependency>
+    <!--一般基础配置-->
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-devtools</artifactId>
+        <scope>runtime</scope>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.projectlombok</groupId>
+        <artifactId>lombok</artifactId>
+        <optional>true</optional>
+    </dependency>
+    <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-starter-test</artifactId>
+        <scope>test</scope>
+    </dependency>
+</dependencies>
+```
+
+#### YML
+
+bootstrap.yml
+
+```yaml
+spring:
+  profiles:
+    active: dev
+  application:
+    name: nacos-config-client
+  cloud:
+    nacos:
+      discovery:
+        #服务注册中心地址
+        # server-addr: localhost:8848
+        server-addr: 192.168.20.149:8848
+      config:
+        #配置中心地址
+        # server-addr: localhost:8848
+        server-addr: 192.168.20.149:8848
+        #指定yaml格式的配置
+        file-extension: yaml
+
+#${spring.application.name}-${spring.profile.active}.${spring.cloud.nacos.config.file-extension}
+#${spring.cloud.nacos.config.prefix}-${spring.profile.active}.${spring.cloud.nacos.config.file-extension}
+# nacos-config-client-dev.yaml
+```
+
+#### 主启动类
+
+```java
+@SpringBootApplication
+public class NacosConfigClientApp3377 {
+    public static void main(String[] args) {
+        SpringApplication.run(NacosConfigClientApp3377.class, args);
+    }
+}
+```
+
+#### ConfigClientController
+
+```java
+@RestController
+@RefreshScope //支持Nacos的动态刷新功能。
+public class ConfigClientController {
+    @Value("${config.info}")
+    private String configInfo;
+
+    @GetMapping("/config/info")
+    public String getConfigInfo() {
+        return configInfo;
+    }
+}
+```
+
+通过 Spring Cloud 原生注解 @RefreshScope 实现配置自动更新
+
+### 在 Nacos 中添加配置信息、Nacos 中的匹配规则
+
+官方文档：https://nacos.io/zh-cn/docs/quick-start-spring-cloud.html
+
+1. 在 `bootstrap.properties` 中配置 Nacos server 的地址和应用名
+
+```
+spring.cloud.nacos.config.server-addr=127.0.0.1:8848
+
+spring.application.name=example
+```
+
+说明：之所以需要配置 `spring.application.name` ，是因为它是构成 Nacos 配置管理 `dataId`字段的一部分。
+
+在 Nacos Spring Cloud 中，`dataId` 的完整格式如下：
+
+```plain
+${prefix}-${spring.profile.active}.${file-extension}
+```
+
+- `prefix` 默认为 `spring.application.name` 的值，也可以通过配置项 `spring.cloud.nacos.config.prefix`来配置。
+- `spring.profile.active` 即为当前环境对应的 profile，详情可以参考 [Spring Boot文档](https://docs.spring.io/spring-boot/docs/current/reference/html/boot-features-profiles.html#boot-features-profiles)。 **注意：当 `spring.profile.active` 为空时，对应的连接符 `-` 也将不存在，dataId 的拼接格式变成 `${prefix}.${file-extension}`**
+- `file-exetension` 为配置内容的数据格式，可以通过配置项 `spring.cloud.nacos.config.file-extension` 来配置。目前只支持 `properties` 和 `yaml` 类型。
+
+所以公式如下
+
+- **${spring.application.name}-${spring.profile.active}.${spring.cloud.nacos.config.file-extension}**
+- **${spring.cloud.nacos.config.prefix}-${spring.profile.active}.${spring.cloud.nacos.config.file-extension}**
+
+#### 为 83 模块添加配置
+
+![chrome_JN8G7LwPOV](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/chrome_JN8G7LwPOV.png)
+
+![chrome_mpBurO0x8X](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/chrome_mpBurO0x8X.png)
+
+`dataId`：nacos-config-client-dev.yaml
+
+```yaml
+server:
+  port: 3377
+
+config:
+    info: nacos config center,version = 1
+```
+
+#### 测试
+
+启动 3377
+
+访问：http://localhost:3377/config/info
+
+![msedge_GVWc5wT0vC](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/msedge_GVWc5wT0vC.png)
+
+#### 动态刷新
+
+nacos 自带动态刷新
+
+修改 nacos-config-client-dev.yaml，点击发布
+
+```yaml
+server:
+  port: 3377
+
+config:
+    info: nacos config center,version = 1.1.10
+```
+
+访问：http://localhost:3377/config/info，配置已经刷新
+
+![msedge_9YEmvPH6rm](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/msedge_9YEmvPH6rm.png)
+
+### 分类配置
+
+#### 问题：多环境多项目管理
+
+##### 问题一
+
+实际开发中，通常一个系统会准备：dev（开发环境）、test（测试环境）、prod（生产环境）
+
+如何保证指定环境启动时服务能正确读取到 Nacos 上相应环境的配置文件？
+
+##### 问题二
+
+一个大型分布式微服务系统中会有很多微服务子项目，每个微服务子项目又都会有相应的开发环境、测试环境、预发环境、正式环境......
+
+如何对这些微服务配置进行管理？
+
+#### Nacos 的图形化管理界面
+
+##### 配置管理界面
+
+配置在命名空间下，一个命名空间对应多个配置
+
+![chrome_kO5IY3Do2I](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/chrome_kO5IY3Do2I.png)
+
+##### 命名空间管理界面
+
+![chrome_MwpqWxFqQo](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/chrome_MwpqWxFqQo.png)
+
+#### Namespace+Group+Data Id 三者关系，设计原因
+
+类似于 Java 里面 package 名和类名
+
+最外层的 namespace 是可以用于区分部署环境的，Group 的 Data Id 逻辑上区分两个目标对象
+
+![PotPlayerMini64_ZQ4CWYxNYV](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/PotPlayerMini64_ZQ4CWYxNYV.png)
+
+默认情况下
+
+Namespace=public，Group=DEFAULT_GROUP，默认的 Cluster 是 DEFAULT
+
+Nacos 默认命名空间是 public，Namespace主要用来实现隔离，开发、测试、生产可以各创建一个 Namespace，不同的 Namespace 之间是隔离的。
+
+Group 默认是 DEFAULT_GROUP，Group 可以把不同的微服务划分到同一个分组里面去
+
+Service 就是微服务，一个 Service 可以包含多个 Cluster（集群），Nacos 默认 Cluster 是 DEFALUT，Cluster 是对指定微服务的一个虚拟划分。比方说为了容灾，将 Service 微服务分别部署在了杭州机房和广州机房，这时候可以给杭州机房的 Service 微服务起一个集群名称（HZ），给广州的微服务起一个集群名称（GZ），还可以尽量让同一个机房的微服务互相调用，以提升性能。
+
+最后是 Instance，就是微服务的实例
+
+### 三种方案加载配置
+
+#### DataId 方案
+
+指定 spring.profile.active 和配置文件的 DataId 来保证不同环境下读取不同的配置，使用默认空间+默认分组
+
+#### Group 方案
+
+通过 Group 实现环境区分，使用默认空间
+
+##### 例
+
+在 nacos web页面，新建 nacos-config-client.yaml，Group 为 DEV_GROUP，data id=nacos-config-client.yaml，命名空间 public
+
+```yaml
+server:
+  port: 3388
+
+config:
+    info: nacos config center,version = 1.1.10,nacos-config-client.yaml,group=DEV_GROUP
+```
+
+修改 bootstrap.yml，config 下添加 group 配置，删除 spring.profiles.active
+```yaml
+spring:
+  application:
+    name: nacos-config-client
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.20.149:8848
+      config:
+        server-addr: 192.168.20.149:8848
+        file-extension: yaml
+        # 所在分组
+        group: DEV_GROUP
+```
+
+启动 3377，访问：http://localhost:3388/config/info
+
+![msedge_ZOfJJW9LZg](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/msedge_ZOfJJW9LZg.png)
 
 
 
+#### Namespace方案
 
+通过 Namespace 区分
 
+##### 例
+
+新建 Namespace cloud-dev 和 cloud-test
+
+![chrome_Xxvg8cUURG](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/chrome_Xxvg8cUURG.png)
+
+新建 nacos-config-client.yaml，Group 为默认，data id=nacos-config-client.yaml，命名空间 cloud-dev
+
+```yaml
+server:
+  port: 3399
+
+config:
+    info: nacos config center,version = 1.1.10,nacos-config-client.yaml,namespace=cloud-dev
+```
+
+修改 3377 的 bootstrap.yml，删除 group，添加 namespace
+
+> namespace 是填写命名空间的 id！！！
+
+```yaml
+spring:
+  application:
+    name: nacos-config-client
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+      config:
+        server-addr: localhost:8848
+        file-extension: yaml
+        namespace: 9b82ba6a-9a0d-4562-ace4-be7fdc328326
+```
+
+启动 3377，访问：http://localhost:3399/config/info
+
+![msedge_OIx6DIQeiZ](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/msedge_OIx6DIQeiZ.png)
 
 ## Nacos AP和CP切换
 

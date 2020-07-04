@@ -33,6 +33,7 @@
         <module>cloud-stream-rabbit-consumer-8803</module>
         <module>cloud-alibaba-provider-payment-9001</module>
         <module>cloud-alibaba-consumer-nacos-83</module>
+        <module>cloud-alibaba-config-client-3377</module>
     </modules>
     <packaging>pom</packaging>
 
