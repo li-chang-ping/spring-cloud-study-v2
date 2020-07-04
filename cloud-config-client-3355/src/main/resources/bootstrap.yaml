@@ -5,7 +5,7 @@ spring:
   application:
     name: config-client
   profiles:
-    active:
+    active: dev
   cloud:
     config:
       name: config-client-3355
