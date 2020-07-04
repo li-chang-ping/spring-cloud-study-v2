@@ -1,0 +1,21 @@
+spring:
+  profiles:
+    active: dev
+  application:
+    name: nacos-config-client
+  cloud:
+    nacos:
+      discovery:
+        #服务注册中心地址
+        # server-addr: localhost:8848
+        server-addr: 192.168.20.149:8848
+      config:
+        #配置中心地址
+        # server-addr: localhost:8848
+        server-addr: 192.168.20.149:8848
+        #指定yaml格式的配置
+        file-extension: yaml
+
+# ${spring.application.name}-${spring.profile.active}.${spring.cloud.nacos.config.file-extension}
+# ${spring.cloud.nacos.config.prefix}-${spring.profile.active}.${spring.cloud.nacos.config.file-extension}
+# nacos-config-client-dev.yaml
