@@ -27,7 +27,13 @@ spring-cloud-study-v2
 ├───cloud-api-commons               公共API
 ├───cloud-consumer-order-80         微服务消费者订单模块
 ├───cloud-provider-payment-8001     payment 微服务提供者模块
-
+├───cloud-provider-payment-8002
+├───cloud-provider-payment-consul-8006
+├───cloud-provider-payment-hystrix-8008
+├───cloud-provider-payment-zk-8004
+├───cloud-provider-test-8101
+├───cloud-provider-test-8102
+├───cloud-stream-rabbit-consumer-8802
 ```
 
 ## 项目搭建
