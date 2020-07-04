@@ -48,7 +48,7 @@ Nacos = Eureka + Config + Bus
 | Dubbo           | 支持                           | 不支持      | 不支持               | 不支持  | 支持        |
 | k8s             | 支持                           | 不支持      | 支持                 | 支持    | 不支持      |
 
-![PotPlayerMini64_L8kaH2fMJE](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/PotPlayerMini64_L8kaH2fMJE.png)
+![PotPlayerMini64_L8kaH2fMJE](16、Spring%20Cloud%20Alibaba%20Nacos%20服务注册和配置中心.assets/PotPlayerMini64_L8kaH2fMJE.png)
 
 ## 安装并运行 Nacos
 
@@ -203,11 +203,11 @@ nacos-server 启动是前提，启动 9001
 
 访问：http://localhost:9001/payment/nacos/1
 
-![image-20200702111247774](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/image-20200702111247774.png)
+![image-20200702111247774](16、Spring%20Cloud%20Alibaba%20Nacos%20服务注册和配置中心.assets/image-20200702111247774.png)
 
 查看 nacos 管理界面
 
-![image-20200702111348558](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/image-20200702111348558.png)
+![image-20200702111348558](16、Spring%20Cloud%20Alibaba%20Nacos%20服务注册和配置中心.assets/image-20200702111348558.png)
 
 #### 新建 9002，9003
 
@@ -217,11 +217,11 @@ nacos-server 启动是前提，启动 9001
 
 以新建 9002 为例
 
-![image-20200702143447467](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/image-20200702143447467.png)
+![image-20200702143447467](16、Spring%20Cloud%20Alibaba%20Nacos%20服务注册和配置中心.assets/image-20200702143447467.png)
 
-![idea64_amuucQAMkL](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/idea64_amuucQAMkL.png)
+![idea64_amuucQAMkL](16、Spring%20Cloud%20Alibaba%20Nacos%20服务注册和配置中心.assets/idea64_amuucQAMkL.png)
 
-![idea64_ZcNi6H6o4T](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/idea64_ZcNi6H6o4T.png)
+![idea64_ZcNi6H6o4T](16、Spring%20Cloud%20Alibaba%20Nacos%20服务注册和配置中心.assets/idea64_ZcNi6H6o4T.png)
 
 9003 同理
 
@@ -274,7 +274,7 @@ nacos-server 启动是前提，启动 9001
 
 spring-cloud-starter-alibaba-nacos-discovery 引入了 ribbon 的依赖
 
-![idea64_wfn8mmmNbc](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/idea64_wfn8mmmNbc.png)
+![idea64_wfn8mmmNbc](16、Spring%20Cloud%20Alibaba%20Nacos%20服务注册和配置中心.assets/idea64_wfn8mmmNbc.png)
 
 #### YML
 
@@ -494,9 +494,9 @@ ${prefix}-${spring.profile.active}.${file-extension}
 
 #### 为 83 模块添加配置
 
-![chrome_JN8G7LwPOV](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/chrome_JN8G7LwPOV.png)
+![chrome_JN8G7LwPOV](16、Spring%20Cloud%20Alibaba%20Nacos%20服务注册和配置中心.assets/chrome_JN8G7LwPOV.png)
 
-![chrome_mpBurO0x8X](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/chrome_mpBurO0x8X.png)
+![chrome_mpBurO0x8X](16、Spring%20Cloud%20Alibaba%20Nacos%20服务注册和配置中心.assets/chrome_mpBurO0x8X.png)
 
 `dataId`：nacos-config-client-dev.yaml
 
@@ -514,7 +514,7 @@ config:
 
 访问：http://localhost:3377/config/info
 
-![msedge_GVWc5wT0vC](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/msedge_GVWc5wT0vC.png)
+![msedge_GVWc5wT0vC](16、Spring%20Cloud%20Alibaba%20Nacos%20服务注册和配置中心.assets/msedge_GVWc5wT0vC.png)
 
 #### 动态刷新
 
@@ -532,7 +532,7 @@ config:
 
 访问：http://localhost:3377/config/info，配置已经刷新
 
-![msedge_9YEmvPH6rm](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/msedge_9YEmvPH6rm.png)
+![msedge_9YEmvPH6rm](16、Spring%20Cloud%20Alibaba%20Nacos%20服务注册和配置中心.assets/msedge_9YEmvPH6rm.png)
 
 ### 分类配置
 
@@ -556,11 +556,11 @@ config:
 
 配置在命名空间下，一个命名空间对应多个配置
 
-![chrome_kO5IY3Do2I](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/chrome_kO5IY3Do2I.png)
+![chrome_kO5IY3Do2I](16、Spring%20Cloud%20Alibaba%20Nacos%20服务注册和配置中心.assets/chrome_kO5IY3Do2I.png)
 
 ##### 命名空间管理界面
 
-![chrome_MwpqWxFqQo](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/chrome_MwpqWxFqQo.png)
+![chrome_MwpqWxFqQo](16、Spring%20Cloud%20Alibaba%20Nacos%20服务注册和配置中心.assets/chrome_MwpqWxFqQo.png)
 
 #### Namespace+Group+Data Id 三者关系，设计原因
 
@@ -568,7 +568,7 @@ config:
 
 最外层的 namespace 是可以用于区分部署环境的，Group 的 Data Id 逻辑上区分两个目标对象
 
-![PotPlayerMini64_ZQ4CWYxNYV](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/PotPlayerMini64_ZQ4CWYxNYV.png)
+![PotPlayerMini64_ZQ4CWYxNYV](16、Spring%20Cloud%20Alibaba%20Nacos%20服务注册和配置中心.assets/PotPlayerMini64_ZQ4CWYxNYV.png)
 
 默认情况下
 
@@ -622,7 +622,7 @@ spring:
 
 启动 3377，访问：http://localhost:3388/config/info
 
-![msedge_ZOfJJW9LZg](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/msedge_ZOfJJW9LZg.png)
+![msedge_ZOfJJW9LZg](16、Spring%20Cloud%20Alibaba%20Nacos%20服务注册和配置中心.assets/msedge_ZOfJJW9LZg.png)
 
 
 
@@ -634,7 +634,7 @@ spring:
 
 新建 Namespace cloud-dev 和 cloud-test
 
-![chrome_Xxvg8cUURG](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/chrome_Xxvg8cUURG.png)
+![chrome_Xxvg8cUURG](16、Spring%20Cloud%20Alibaba%20Nacos%20服务注册和配置中心.assets/chrome_Xxvg8cUURG.png)
 
 新建 nacos-config-client.yaml，Group 为默认，data id=nacos-config-client.yaml，命名空间 cloud-dev
 
@@ -666,7 +666,7 @@ spring:
 
 启动 3377，访问：http://localhost:3399/config/info
 
-![msedge_OIx6DIQeiZ](16、Spring Cloud Alibaba Nacos 服务注册和配置中心.assets/msedge_OIx6DIQeiZ.png)
+![msedge_OIx6DIQeiZ](16、Spring%20Cloud%20Alibaba%20Nacos%20服务注册和配置中心.assets/msedge_OIx6DIQeiZ.png)
 
 ## Nacos AP和CP切换
 
