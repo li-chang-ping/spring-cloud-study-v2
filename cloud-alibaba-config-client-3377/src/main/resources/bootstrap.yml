@@ -1,6 +1,4 @@
 spring:
-  profiles:
-    active: dev
   application:
     name: nacos-config-client
   cloud:
@@ -15,6 +13,7 @@ spring:
         server-addr: 192.168.20.149:8848
         #指定yaml格式的配置
         file-extension: yaml
+        group: DEV_GROUP
 
 # ${spring.application.name}-${spring.profile.active}.${spring.cloud.nacos.config.file-extension}
 # ${spring.cloud.nacos.config.prefix}-${spring.profile.active}.${spring.cloud.nacos.config.file-extension}
